@@ -24,3 +24,4 @@ library(ggplot2)
 qplot(x = hp, y = disp, data = mtcars)
 ```
 
+Wow!

@@ -19,7 +19,7 @@
       <guid>/blog/my-great-new-blog-post/</guid>
       <description>Bla bla and more bla.
 1 + 1 ## [1] 2 Some clever stuff.
-library(dplyr) ## ## Attache Paket: &amp;#39;dplyr&amp;#39; ## The following objects are masked from &amp;#39;package:stats&amp;#39;: ## ## filter, lag ## The following objects are masked from &amp;#39;package:base&amp;#39;: ## ## intersect, setdiff, setequal, union library(ggplot2) qplot(x = hp, y = disp, data = mtcars) </description>
+library(dplyr) ## ## Attache Paket: &amp;#39;dplyr&amp;#39; ## The following objects are masked from &amp;#39;package:stats&amp;#39;: ## ## filter, lag ## The following objects are masked from &amp;#39;package:base&amp;#39;: ## ## intersect, setdiff, setequal, union library(ggplot2) qplot(x = hp, y = disp, data = mtcars) Wow!</description>
     </item>
     
     <item>
@@ -29,8 +29,8 @@ library(dplyr) ## ## Attache Paket: &amp;#39;dplyr&amp;#39; ## The following obj
       
       <guid>/about/colophon/</guid>
       <description>This website is a personal homepage.
-The site is built with Hugo—a static site generator made with Go. The website source code is available on GitHub. It uses the cocoa theme. The posts are written in Markdown.
-The primary font face is Open Sans and the monospace font face is Ubuntu Mono. The social icons are from the Ionicons font set. CSS classes for code syntax highlighting are inserted during compile-time by Hugo using Pygments.</description>
+The site is built with Hugo—a static site generator made with Go. The website source code is available on GitHub. It uses the cocoa theme. The posts are mostly written in R Markdown, with the help of blogdown and RStudio. It is currently hosted on Dreamhost.
+The primary font face is Open Sans and the monospace font face is Ubuntu Mono. The social icons are from the Ionicons font set.</description>
     </item>
     
   </channel>
