@@ -5,7 +5,4 @@ title = "About"
 
 +++
 
-
-<br />
-
-[About this site](colophon/)
+More to come.
