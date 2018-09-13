@@ -22,39 +22,5 @@
 library(dplyr) ## ## Attache Paket: &amp;#39;dplyr&amp;#39; ## The following objects are masked from &amp;#39;package:stats&amp;#39;: ## ## filter, lag ## The following objects are masked from &amp;#39;package:base&amp;#39;: ## ## intersect, setdiff, setequal, union library(ggplot2) qplot(x = hp, y = disp, data = mtcars) </description>
     </item>
     
-    <item>
-      <title>Metamorphosis by Franz Kafka</title>
-      <link>/blog/metamorphosis-by-franz-kafka/</link>
-      <pubDate>Mon, 21 Dec 2015 04:03:46 -0600</pubDate>
-      
-      <guid>/blog/metamorphosis-by-franz-kafka/</guid>
-      <description>Part One One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin.
- He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections.
- The bedding was hardly able to cover it and seemed ready to slide off any moment. His many legs, pitifully thin compared with the size of the rest of him, waved about helplessly as he looked.</description>
-    </item>
-    
-    <item>
-      <title>Use @ instead of HEAD</title>
-      <link>/blog/use-at-instead-of-head/</link>
-      <pubDate>Tue, 25 Aug 2015 17:09:14 -0500</pubDate>
-      
-      <guid>/blog/use-at-instead-of-head/</guid>
-      <description>I recently discovered that from git version 1.8.5 onwards, @ can replace HEAD:
-$ git reset --hard @~2 $ git rebase -i @~10 $ git diff @~2..@~3  And also in most scenarios HEAD can be left out completely, so you can say:
-$ git reset -- @{2}  instead of:
-$ git reset -- HEAD@{2}  It takes some getting used to, but it&amp;rsquo;s definitely faster than typing HEAD.</description>
-    </item>
-    
-    <item>
-      <title>Hello R Markdown</title>
-      <link>/blog/hello-r-markdown/</link>
-      <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
-      
-      <guid>/blog/hello-r-markdown/</guid>
-      <description>R Markdown This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see http://rmarkdown.rstudio.com.
-You can embed an R code chunk like this:
-summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 26.00 ## Median :15.0 Median : 36.00 ## Mean :15.4 Mean : 42.98 ## 3rd Qu.</description>
-    </item>
-    
   </channel>
 </rss>
