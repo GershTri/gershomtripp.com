@@ -1,0 +1,26 @@
+---
+title: My great new blog post.
+author: Gershom Tripp
+date: '2018-09-12'
+slug: my-great-new-blog-post
+categories:
+  - R
+tags:
+  - R Markdown
+---
+
+Bla bla and more bla.
+
+```{r }
+1 + 1
+```
+
+Some clever stuff.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+qplot(x = hp, y = disp, data = mtcars)
+```
+

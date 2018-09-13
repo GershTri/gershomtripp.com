@@ -1,0 +1,11 @@
+/* override css styles of the main theme here */
+
+section.header .avatar {
+  box-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
+}
+
+.avatar {
+  min-width: 100px;
+  border: 3px solid black;
+  border-radius: 0%;
+}
