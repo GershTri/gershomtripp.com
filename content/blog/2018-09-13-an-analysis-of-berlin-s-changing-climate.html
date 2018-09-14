@@ -332,56 +332,111 @@ berlin_data$Month &lt;- factor(berlin_data$Month,
     summarise(Value = mean(Value, na.rm = T)) %&gt;%
     ggplot(aes(x = Year, y = Value)) +  
     geom_line(aes(color = Station)) +
-    geom_smooth(se = F, method = &quot;loess&quot;, span = .8) +
+    geom_smooth(se = F, method = &quot;loess&quot;, span = .2) +
     theme_minimal() + 
     theme(panel.grid.minor = element_blank(),
           panel.grid.major.x = element_blank()
           ) +
     labs(title = &quot;Avg. Yearly Temperature (°C), 1876-2017&quot;,
          y = &quot;Temp.&quot;
-         ) + 
+         ) +
     scale_x_continuous(limits = c(1876, 2017),
-                       breaks = seq(1877, 2017,
-                                    by = 10
-                                    )
-                       ) + 
-    scale_y_continuous(breaks = seq(3.5, 11.5,
-                                    by = 1)
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(limits = c(3, 12),
+                       breaks = seq(3, 12, by = 1)
                        )</code></pre>
 <p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/viz%20mean%20yearly%20temps-1.png" width="672" /></p>
-<p>Something else that immediately jumps out is the precipitous drop in 1945, which seems to correspond to <a href="https://en.wikipedia.org/wiki/Stunde_Null#Der_Elendswinter_(%22The_miserable_winter%22,_1945%E2%80%9346)"><em>Der Elendswinter</em></a>, a particulary harsh winter in 1945-1946. Strangely, there’s not much information about this event to be found online beyond the above Wikipedia article. It might just be a glitch, but it doesn’t really effect the overall trend, so I’m not going to worry about it too much.</p>
-<p>The next chart compares changes in Berlin’s average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from NASA.</p>
+<p>Something else that immediately jumps out is the precipitous drop in 1945. Histograms of each year from 1940-1950 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however, that is to say, some data is missing, and the data that is available clusters around the low end.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Station == &quot;Dahlem (LFAG)&quot;,
+           Variable == &quot;Avg. Temp. (°C)&quot;,
+           Year %in% 1941:1949,
+           !is.na(Value)
+           ) %&gt;% 
+    ggplot(aes(x = Value)) + 
+    geom_histogram(bins = 30) +
+    facet_wrap(~Year) + 
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.spacing = unit(2, &quot;lines&quot;)
+          ) +
+    labs(title = &quot;Histograms of Temperature, 1941-1949&quot;,
+         x = &quot;Temperature&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/viz%20distribution%20of%20temps%201941-1949-1.png" width="672" /></p>
+<p>The <a href="https://en.wikipedia.org/wiki/Battle_of_Berlin">Battle of Berlin</a> was in the spring of 1945, so there’s really no question as to why the data is missing. That one outlier likely won’t really effect any overall trends, but it makes sense to drop all data from 1945, nonetheless.</p>
+<pre class="r"><code>berlin_data &lt;- filter(berlin_data, Year != 1945)</code></pre>
+<p>The next chart compares changes in Berlin’s average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from <a href="https://climate.nasa.gov/vital-signs/global-temperature/">NASA</a>.</p>
 <pre class="r"><code># get global temp. data from NASA
 nasa_data &lt;- read_tsv(&quot;https://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt&quot;,
                       col_names = c(&quot;Year&quot;, &quot;World&quot;, &quot;lowess&quot;),
                       col_types = &quot;idd&quot;
                       )</code></pre>
-<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graphic shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature <em>change</em> in °C, and <em>not</em> average yearly temperature.</p>
-<pre class="r"><code># calculate change from mean for Berlin, add NASA data, visualize
-berlin_data %&gt;%
+<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature <em>change</em> in °C, and <em>not</em> average yearly temperature. What I call change NASA calls <strong>annual average anomaly</strong>, which is the “change in global surface temperature relative to 1951-1980 average temperatures”. To maintain consistency with NASA’s data I’ll also transform the data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with <code>span = 0.2</code> to cut down on some of the noise.</p>
+<pre class="r"><code>berlin_data %&gt;%
     filter(Variable == &quot;Avg. Temp. (°C)&quot;,
            ) %&gt;%
     group_by(Year) %&gt;%
     summarise(Value = mean(Value, na.rm = T)) %&gt;%
-    mutate(Berlin = Value - mean(Value)) %&gt;%
+    # put Berlin data in relation to 1951-1980 average
+    mutate(Berlin = Value - mean(filter(.data = .,
+                                        Year %in% 1951:1980
+                                        )[[&quot;Value&quot;]]
+                                 )
+           ) %&gt;%  
     right_join(nasa_data, by = &quot;Year&quot;) %&gt;%
     select(Year, Berlin, World) %&gt;%
+    filter(!is.na(Berlin), !is.na(World)) %&gt;% 
+    # loess transform
+    mutate(Berlin = predict(loess(Berlin ~ Year, data = ., span = 0.2)),
+           World = predict(loess(World ~ Year, data = ., span = 0.2))
+           ) %&gt;% 
     gather(key = &quot;Scope&quot;, value = &quot;Value&quot;, 2:3) %&gt;%
-    ggplot(aes(x = Year, y= Value, color = Scope)) +
-    geom_smooth(size = 1, method = &quot;loess&quot;, span = .5) +
+    ggplot(aes(x = Year, y= Value)) +
+    geom_line(aes(color = Scope), size = 1) +
     geom_hline(yintercept = 0, linetype = 8) +
     theme_minimal() + 
     theme(panel.grid.minor = element_blank(),
           panel.grid.major.x = element_blank()
           ) +
-    scale_x_continuous(limits = c(1880, 2017),
+    scale_x_continuous(limits = c(1876, 2017),
                        breaks = seq(1877, 2017, by = 10)
                        ) +
-    scale_y_continuous(breaks = seq(-1, 2, .5)) +
-    expand_limits(y = -1.1) +
+    scale_y_continuous(limits = c(-1, 2),
+                       breaks = seq(-1, 2, .5)) +
     labs(color = &quot;&quot;,
-         title = &quot;Temp. Change in °C, World vs. Berlin (LOESS), 1877-2017&quot;,
+         title = &quot;Temp. Change in °C (LOESS), World vs. Berlin, 1877-2017&quot;,
          y = &quot;Change (°C)&quot;
          )</code></pre>
 <p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/viz%20global%20and%20local%20temp%20change-1.png" width="672" /></p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Max Temp. (°C)&quot;,
+           Month %in% c(&quot;June&quot;, &quot;July&quot;, &quot;August&quot;),
+           Year &gt; 1956,
+           Value &gt;= 25
+           ) %&gt;%
+    group_by(Year, Month, Day) %&gt;% 
+    summarise(Value = mean(Value)) %&gt;% 
+    group_by(Year, Month) %&gt;% 
+    summarise(Value = n()) %&gt;% 
+    ggplot(aes(x = Year, y = Value)) +
+        geom_line() +
+        geom_smooth(method = &quot;loess&quot;, span = .8) +
+        facet_wrap(~ Month) + 
+        scale_x_continuous(limits = c(1957, 2017),
+                           breaks = seq(1957, 2017, by = 10)
+                           ) + 
+        scale_y_continuous(limits = c(0, 30),
+                           breaks = seq(0, 30, by = 3)) +
+        theme_minimal() + 
+        theme(panel.grid.minor = element_blank(),
+              panel.grid.major.x = element_blank(),
+              panel.spacing.x = unit(1.5, &quot;lines&quot;)
+              ) +
+        labs(title = &quot;Number of Days with Temp. &gt; 25°C, 1957-2017&quot;,
+             y = &quot;Number of Days&quot;
+             )</code></pre>
+<p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/temp_greater_25-1.png" width="672" /></p>
 </div>

@@ -229,27 +229,52 @@ berlin_data %>%
     summarise(Value = mean(Value, na.rm = T)) %>%
     ggplot(aes(x = Year, y = Value)) +  
     geom_line(aes(color = Station)) +
-    geom_smooth(se = F, method = "loess", span = .8) +
+    geom_smooth(se = F, method = "loess", span = .2) +
     theme_minimal() + 
     theme(panel.grid.minor = element_blank(),
           panel.grid.major.x = element_blank()
           ) +
     labs(title = "Avg. Yearly Temperature (°C), 1876-2017",
          y = "Temp."
-         ) + 
+         ) +
     scale_x_continuous(limits = c(1876, 2017),
-                       breaks = seq(1877, 2017,
-                                    by = 10
-                                    )
-                       ) + 
-    scale_y_continuous(breaks = seq(3.5, 11.5,
-                                    by = 1)
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(limits = c(3, 12),
+                       breaks = seq(3, 12, by = 1)
                        )
 ```
 
-Something else that immediately jumps out is the precipitous drop in 1945, which seems to correspond to [*Der Elendswinter*](https://en.wikipedia.org/wiki/Stunde_Null#Der_Elendswinter_(%22The_miserable_winter%22,_1945%E2%80%9346)), a particulary harsh winter in 1945-1946. Strangely, there's not much information about this event to be found online beyond the above Wikipedia article. It might just be a glitch, but it doesn't really effect the overall trend, so I'm not going to worry about it too much.
+Something else that immediately jumps out is the precipitous drop in 1945. Histograms of each year from 1940-1950 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however, that is to say, some data is missing, and the data that is available clusters around the low end.
 
-The next chart compares changes in Berlin's average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from NASA.
+```{r viz distribution of temps 1941-1949}
+berlin_data %>% 
+    filter(Station == "Dahlem (LFAG)",
+           Variable == "Avg. Temp. (°C)",
+           Year %in% 1941:1949,
+           !is.na(Value)
+           ) %>% 
+    ggplot(aes(x = Value)) + 
+    geom_histogram(bins = 30) +
+    facet_wrap(~Year) + 
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.spacing = unit(2, "lines")
+          ) +
+    labs(title = "Histograms of Temperature, 1941-1949",
+         x = "Temperature"
+         )
+```
+
+
+The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. That one outlier likely won't really effect any overall trends, but it makes sense to drop all data from 1945, nonetheless.
+
+```{r drop 1945}
+berlin_data <- filter(berlin_data, Year != 1945)
+```
+
+The next chart compares changes in Berlin's average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from [NASA](https://climate.nasa.gov/vital-signs/global-temperature/).
 
 ```{r dowload nasa temp data}
 # get global temp. data from NASA
@@ -260,34 +285,72 @@ nasa_data <- read_tsv("https://climate.nasa.gov/system/internal_resources/detail
 ```
 
 
-I can then combine the NASA data with the Berlin data and visualize them together. The following graphic shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature *change* in °C, and *not* average yearly temperature. 
+I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature *change* in °C, and *not* average yearly temperature. What I call change NASA calls **annual average anomaly**, which is the "change in global surface temperature relative to 1951-1980 average temperatures". To maintain consistency with NASA's data I'll also transform the data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with `span = 0.2` to cut down on some of the noise.
 
 ```{r viz global and local temp change}
-# calculate change from mean for Berlin, add NASA data, visualize
 berlin_data %>%
     filter(Variable == "Avg. Temp. (°C)",
            ) %>%
     group_by(Year) %>%
     summarise(Value = mean(Value, na.rm = T)) %>%
-    mutate(Berlin = Value - mean(Value)) %>%
+    # put Berlin data in relation to 1951-1980 average
+    mutate(Berlin = Value - mean(filter(.data = .,
+                                        Year %in% 1951:1980
+                                        )[["Value"]]
+                                 )
+           ) %>%  
     right_join(nasa_data, by = "Year") %>%
     select(Year, Berlin, World) %>%
+    filter(!is.na(Berlin), !is.na(World)) %>% 
+    # loess transform
+    mutate(Berlin = predict(loess(Berlin ~ Year, data = ., span = 0.2)),
+           World = predict(loess(World ~ Year, data = ., span = 0.2))
+           ) %>% 
     gather(key = "Scope", value = "Value", 2:3) %>%
-    ggplot(aes(x = Year, y= Value, color = Scope)) +
-    geom_smooth(size = 1, method = "loess", span = .5) +
+    ggplot(aes(x = Year, y= Value)) +
+    geom_line(aes(color = Scope), size = 1) +
     geom_hline(yintercept = 0, linetype = 8) +
     theme_minimal() + 
     theme(panel.grid.minor = element_blank(),
           panel.grid.major.x = element_blank()
           ) +
-    scale_x_continuous(limits = c(1880, 2017),
+    scale_x_continuous(limits = c(1876, 2017),
                        breaks = seq(1877, 2017, by = 10)
                        ) +
-    scale_y_continuous(breaks = seq(-1, 2, .5)) +
-    expand_limits(y = -1.1) +
+    scale_y_continuous(limits = c(-1, 2),
+                       breaks = seq(-1, 2, .5)) +
     labs(color = "",
-         title = "Temp. Change in °C, World vs. Berlin (LOESS), 1877-2017",
+         title = "Temp. Change in °C (LOESS), World vs. Berlin, 1877-2017",
          y = "Change (°C)"
          )
 ```
 
+```{r temp_greater_25}
+berlin_data %>% 
+    filter(Variable == "Max Temp. (°C)",
+           Month %in% c("June", "July", "August"),
+           Year > 1956,
+           Value >= 25
+           ) %>%
+    group_by(Year, Month, Day) %>% 
+    summarise(Value = mean(Value)) %>% 
+    group_by(Year, Month) %>% 
+    summarise(Value = n()) %>% 
+    ggplot(aes(x = Year, y = Value)) +
+        geom_line() +
+        geom_smooth(method = "loess", span = .8) +
+        facet_wrap(~ Month) + 
+        scale_x_continuous(limits = c(1957, 2017),
+                           breaks = seq(1957, 2017, by = 10)
+                           ) + 
+        scale_y_continuous(limits = c(0, 30),
+                           breaks = seq(0, 30, by = 3)) +
+        theme_minimal() + 
+        theme(panel.grid.minor = element_blank(),
+              panel.grid.major.x = element_blank(),
+              panel.spacing.x = unit(1.5, "lines")
+              ) +
+        labs(title = "Number of Days with Temp. > 25°C, 1957-2017",
+             y = "Number of Days"
+             )
+```
