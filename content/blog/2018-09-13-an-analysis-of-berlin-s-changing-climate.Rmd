@@ -1,0 +1,293 @@
+---
+title: An analysis of Berlin’s changing climate.
+author: Gershom Tripp
+date: '2018-09-13'
+slug: an-analysis-of-berlin-s-changing-climate
+categories:
+  - R
+  - tidyverse
+tags:
+  - climate
+  - Berlin
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+
+
+
+### Introduction
+
+This post is inspired in part by conversations I've had, or overheard, about Berlin's "worsening" weather. Putting aside individual interpretations of what "worse" means ("It's too cold and rainy!", say, "It's too hot!", say others), there's definitely something to the general observation that Berlin's climate is changing. I've witnessed it even in the 11+ years that I've lived here.
+
+Beyond the motivation of being an intolerable [Rechthaber](https://www.dict.cc/?s=rechthaber) at future gripe sessions, I think it's important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening [now](https://climate.nasa.gov/effects/), and there's some evidence that it's accelerating even [faster than predicted](https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record).
+
+For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis below is cutting edge or original. I simply visualize some data that others have collected. That said, I should still be able reach some conclusions.
+
+The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing, [skip to the analysis](#analysis).
+
+### Data hygiene
+
+First off, the libraries:
+
+```{r load libs, warning=FALSE, error=FALSE, message=FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stats)
+library(psych)
+library(lubridate)
+library(ggplot2)
+library(corrplot)
+```
+
+The data is a subset of the [Deutscher Wetterdienst](https://www.dwd.de/DE/Home/home_node.html)'s
+extensive repository of weather data. It's possible to get hourly averages, going back decades, but I decided daily averages were enough for this analysis. I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.
+
+The data files are semicolon-delimited. To keep things simple I'll import
+everything as character strings. Numeric and date objects are converted later,
+as needed. The value `-999` is imported as `NA`.
+
+```{r remove whitespace, message=FALSE}
+# get the names of  the data files, import them as text, remove white space and
+# overwrite originals with de-whitespaced files
+data_path <- file.path("datasets", "berlin_climate_data")
+file_names <- dir(data_path)
+file_names <- file_names[grep(pattern = "data", file_names)]
+
+for (file_name in file_names){
+    file_path <- file.path(data_path, file_name)
+    file <- read_file(file_path)
+    file <- gsub(" ", "", file)
+    write_file(file, file_path)
+}
+
+# wrapper function to load data with defaults
+read_data <- function(path){
+    read_delim(file = path,
+               delim = ";",
+               col_types = paste0(rep("c", 19), collapse = ""),
+               na = "-999"
+               )
+}
+
+# read in the data
+dahlem_fu_data <- read_data(file.path(data_path, "Dahlem-(FU)-data.txt"))
+dahlem_lfag_data <- read_data(file.path(data_path, "Dahlem-(LFAG)-data.txt"))
+tegel_data <- read_data(file.path(data_path, "Tegel-data.txt"))
+tempelhof_data <- read_data(file.path(data_path, "Tempelhof-data.txt"))
+```
+
+
+It makes sense to take a look at the included parameter files to get an idea what kind of data I'm working with. These are in German (umlauts!), so I'll use `guess_encoding()` from the `readr` library to figure out which ISO I need.
+
+```{r guess file encoding}
+guess_encoding("datasets/berlin_climate_data/Dahlem-(FU)-params.txt") %>% 
+    knitr::kable()
+```
+
+ISO-8859-1 it is. I don't care too much about the details of each station, so I'll just import one file, `Tempelhof-params.txt`, to gain some insight into the parameters, i.e. abbreviations, units used, etc. 
+
+```{r load and show params, warning=FALSE}
+# load parameter file
+data_path <- file.path("datasets", "berlin_climate_data", "Tempelhof-params.txt")
+tempelhof_params <- read_delim(file = data_path,
+                               delim = ";",
+                               col_types = paste0(rep("c", 13), collapse = ""),
+                               locale = locale(encoding = "ISO-8859-1")
+                               )
+
+# filter and show parameters
+tempelhof_params %>%
+    select(2:7) %>% 
+    filter(!duplicated(Parameter) & !is.na(Parameter)) %>% 
+    knitr::kable()
+```
+
+
+
+
+
+
+
+
+
+### Tidying the data
+
+There are a couple more changes to be made before I can start visualizing climate change in Berlin. First, [tidyverse](https://www.tidyverse.org/) magic works most potently on *long* data, but the DW uses *wide* format ([see the difference here](https://en.wikipedia.org/wiki/Wide_and_narrow_data)). Second, the variable abbreviations are hard to understand (FM, RSK, etc.), so I should replace them with something else. Third and last, I now have four datasets, one for each Berlin weather station, but one would be preferable.
+
+I'll change the variable names using the following map.
+
+```{r variable names map}
+var_names <- c("Date" = "MESS_DATUM",
+               "Avg. Wind Speed (m/sec)" = "FM",
+               "Max Wind Speed (m/sec)" = "FX",
+               "Avg. Cloud Cover (8th)" = "NM",
+               "Avg. Air Pressure (hPa)" = "PM",
+               "Precipitation (mm)" = "RSK",
+               "Sun Shine Duration (h)" = "SDK",
+               "Snow (cm)" = "SHK_TAG",
+               "Avg. Temp. (°C)" = "TMK",
+               "Min. Temp. (°C)" = "TNK",
+               "Max Temp. (°C)" = "TXK",
+               "Avg. Humidity (%)" = "UPM"
+               )
+```
+
+The following `tidy_data` function reduces each data frame to the set of variables I'm interested in, converts the character strings to numbers and dates, and `gathers` the variables into long format.
+
+```{r tidy_data function}
+tidy_data <- function(df, vars, station_name){
+    df <- select(df, vars)
+    df <- as_tibble(sapply(df, as.double))
+    df$Date <- ymd(df$Date)
+    df <- gather(df, key = "Variable", value = "Value", 2:12)
+    df$Station <- station_name
+    df
+}
+```
+
+I can now call `tidy_data` for each station, and then combine the station data into one data frame `berlin_data`.
+
+```{r tidy stations}
+# call tidy_data for each station dataset
+dahlem_lfag_data <- tidy_data(dahlem_lfag_data, var_names, "Dahlem (LFAG)")
+dahlem_fu_data <- tidy_data(dahlem_fu_data, var_names, "Dahlem (FU)")
+tegel_data <- tidy_data(tegel_data, var_names, "Tegel")
+tempelhof_data <- tidy_data(tempelhof_data, var_names, "Tempelhof")
+
+# combine station data into one data frame
+berlin_data <- rbind(dahlem_lfag_data, dahlem_fu_data, tegel_data, tempelhof_data)
+```
+
+There's just one final change I'd like to make: The values reflect daily averages, and measurement began in the 19th century for some stations, so I'm faced with hundreds of thousands of observations! To make things more manageable I'll include different time scales, e.g. years, months, weeks, days, and [meteorological seasons](https://en.wikipedia.org/wiki/Season#Meteorological). While I'm at it I'll also convert months and seasons to factors.
+
+```{r add year month week season}
+# add years, months, weeks, days, and seasons
+berlin_data <- berlin_data %>% 
+    mutate(Year = year(Date),
+           Month = month(Date),
+           Week = week(Date),
+           Day = day(Date),
+           Season = case_when(Month %in% c(12, 1, 2) ~ "Winter",
+                              Month %in% 3:5 ~ "Spring",
+                              Month %in% 6:8 ~ "Summer",
+                              Month %in% 9:11 ~ "Fall",
+                              )
+           )
+
+# turn seasons into factors
+berlin_data$Season <- factor(berlin_data$Season,
+                             ordered = T,
+                             levels = c("Spring", "Summer", "Winter", "Fall")
+                             )
+
+# turn months into factors
+berlin_data$Month <- factor(berlin_data$Month,
+                            ordered = T,
+                            levels = 1:12,
+                            labels = c("January", "February", "March", "April",
+                                       "May", "June", "July", "August", 
+                                       "September", "October", "November",
+                                       "December"
+                                       )
+                            )
+```
+
+
+
+
+
+
+
+
+
+### <a name="analysis"></a>Visualizing Berlin's changing climate
+
+I now have a few hundred thousand observations for each of four Berlin weather stations, which I can freely group based on my analytical needs. The following table shows the total observations (daily averages) for each of Berlin's four weather stations.
+
+```{r show number of observations}
+berlin_data %>% 
+    group_by(Station) %>% 
+    summarise("number of observations" = n()) %>% 
+    knitr::kable()
+```
+
+Let's first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of yearly variation.
+ 
+```{r viz mean yearly temps, message=FALSE}
+berlin_data %>% 
+    filter(Variable == "Avg. Temp. (°C)") %>%
+    group_by(Station, Year) %>% 
+    summarise(Value = mean(Value, na.rm = T)) %>%
+    ggplot(aes(x = Year, y = Value)) +  
+    geom_line(aes(color = Station)) +
+    geom_smooth(se = F, method = "loess", span = .8) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    labs(title = "Avg. Yearly Temperature (°C), 1876-2017",
+         y = "Temp."
+         ) + 
+    scale_x_continuous(limits = c(1876, 2017),
+                       breaks = seq(1877, 2017,
+                                    by = 10
+                                    )
+                       ) + 
+    scale_y_continuous(breaks = seq(3.5, 11.5,
+                                    by = 1)
+                       )
+```
+
+Something else that immediately jumps out is the precipitous drop in 1945, which seems to correspond to [*Der Elendswinter*](https://en.wikipedia.org/wiki/Stunde_Null#Der_Elendswinter_(%22The_miserable_winter%22,_1945%E2%80%9346)), a particulary harsh winter in 1945-1946. Strangely, there's not much information about this event to be found online beyond the above Wikipedia article. It might just be a glitch, but it doesn't really effect the overall trend, so I'm not going to worry about it too much.
+
+The next chart compares changes in Berlin's average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from NASA.
+
+```{r dowload nasa temp data}
+# get global temp. data from NASA
+nasa_data <- read_tsv("https://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt",
+                      col_names = c("Year", "World", "lowess"),
+                      col_types = "idd"
+                      )
+```
+
+
+I can then combine the NASA data with the Berlin data and visualize them together. The following graphic shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature *change* in °C, and *not* average yearly temperature. 
+
+```{r viz global and local temp change}
+# calculate change from mean for Berlin, add NASA data, visualize
+berlin_data %>%
+    filter(Variable == "Avg. Temp. (°C)",
+           ) %>%
+    group_by(Year) %>%
+    summarise(Value = mean(Value, na.rm = T)) %>%
+    mutate(Berlin = Value - mean(Value)) %>%
+    right_join(nasa_data, by = "Year") %>%
+    select(Year, Berlin, World) %>%
+    gather(key = "Scope", value = "Value", 2:3) %>%
+    ggplot(aes(x = Year, y= Value, color = Scope)) +
+    geom_smooth(size = 1, method = "loess", span = .5) +
+    geom_hline(yintercept = 0, linetype = 8) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    scale_x_continuous(limits = c(1880, 2017),
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(breaks = seq(-1, 2, .5)) +
+    expand_limits(y = -1.1) +
+    labs(color = "",
+         title = "Temp. Change in °C, World vs. Berlin (LOESS), 1877-2017",
+         y = "Change (°C)"
+         )
+```
+

@@ -12,14 +12,13 @@
     
     
     <item>
-      <title>My great new blog post.</title>
-      <link>/blog/my-great-new-blog-post/</link>
-      <pubDate>Wed, 12 Sep 2018 00:00:00 +0000</pubDate>
+      <title>An analysis of Berlin’s changing climate.</title>
+      <link>/blog/an-analysis-of-berlin-s-changing-climate/</link>
+      <pubDate>Thu, 13 Sep 2018 00:00:00 +0000</pubDate>
       
-      <guid>/blog/my-great-new-blog-post/</guid>
-      <description>Bla bla and more bla.
-1 + 1 ## [1] 2 Some clever stuff.
-library(dplyr) ## ## Attache Paket: &amp;#39;dplyr&amp;#39; ## The following objects are masked from &amp;#39;package:stats&amp;#39;: ## ## filter, lag ## The following objects are masked from &amp;#39;package:base&amp;#39;: ## ## intersect, setdiff, setequal, union library(ggplot2) qplot(x = hp, y = disp, data = mtcars) Wow!</description>
+      <guid>/blog/an-analysis-of-berlin-s-changing-climate/</guid>
+      <description>Introduction This post is inspired in part by conversations I’ve had, or overheard, about Berlin’s “worsening” weather. Putting aside individual interpretations of what “worse” means (“It’s too cold and rainy!”, say, “It’s too hot!”, say others), there’s definitely something to the general observation that Berlin’s climate is changing. I’ve witnessed it even in the 11+ years that I’ve lived here.
+Beyond the motivation of being an intolerable Rechthaber at future gripe sessions, I think it’s important to explore how global warming and climate change manifest themselves at the local level.</description>
     </item>
     
   </channel>

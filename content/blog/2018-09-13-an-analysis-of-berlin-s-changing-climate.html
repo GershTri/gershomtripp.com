@@ -1,0 +1,387 @@
+---
+title: An analysis of Berlin’s changing climate.
+author: Gershom Tripp
+date: '2018-09-13'
+slug: an-analysis-of-berlin-s-changing-climate
+categories:
+  - R
+  - tidyverse
+tags:
+  - climate
+  - Berlin
+---
+
+
+
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>This post is inspired in part by conversations I’ve had, or overheard, about Berlin’s “worsening” weather. Putting aside individual interpretations of what “worse” means (“It’s too cold and rainy!”, say, “It’s too hot!”, say others), there’s definitely something to the general observation that Berlin’s climate is changing. I’ve witnessed it even in the 11+ years that I’ve lived here.</p>
+<p>Beyond the motivation of being an intolerable <a href="https://www.dict.cc/?s=rechthaber">Rechthaber</a> at future gripe sessions, I think it’s important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening <a href="https://climate.nasa.gov/effects/">now</a>, and there’s some evidence that it’s accelerating even <a href="https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record">faster than predicted</a>.</p>
+<p>For the record, I’m neither a climatoligist nor a meteorologist, and nothing about my analysis below is cutting edge or original. I simply visualize some data that others have collected. That said, I should still be able reach some conclusions.</p>
+<p>The next couple of sections cover how I wrangle the data into a more manageable form. If you’re not interested in that kind of thing, <a href="#analysis">skip to the analysis</a>.</p>
+</div>
+<div id="data-hygiene" class="section level3">
+<h3>Data hygiene</h3>
+<p>First off, the libraries:</p>
+<pre class="r"><code>library(readr)
+library(dplyr)
+library(tidyr)
+library(stats)
+library(psych)
+library(lubridate)
+library(ggplot2)
+library(corrplot)</code></pre>
+<p>The data is a subset of the <a href="https://www.dwd.de/DE/Home/home_node.html">Deutscher Wetterdienst</a>’s extensive repository of weather data. It’s possible to get hourly averages, going back decades, but I decided daily averages were enough for this analysis. I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.</p>
+<p>The data files are semicolon-delimited. To keep things simple I’ll import everything as character strings. Numeric and date objects are converted later, as needed. The value <code>-999</code> is imported as <code>NA</code>.</p>
+<pre class="r"><code># get the names of  the data files, import them as text, remove white space and
+# overwrite originals with de-whitespaced files
+data_path &lt;- file.path(&quot;datasets&quot;, &quot;berlin_climate_data&quot;)
+file_names &lt;- dir(data_path)
+file_names &lt;- file_names[grep(pattern = &quot;data&quot;, file_names)]
+
+for (file_name in file_names){
+    file_path &lt;- file.path(data_path, file_name)
+    file &lt;- read_file(file_path)
+    file &lt;- gsub(&quot; &quot;, &quot;&quot;, file)
+    write_file(file, file_path)
+}
+
+# wrapper function to load data with defaults
+read_data &lt;- function(path){
+    read_delim(file = path,
+               delim = &quot;;&quot;,
+               col_types = paste0(rep(&quot;c&quot;, 19), collapse = &quot;&quot;),
+               na = &quot;-999&quot;
+               )
+}
+
+# read in the data
+dahlem_fu_data &lt;- read_data(file.path(data_path, &quot;Dahlem-(FU)-data.txt&quot;))
+dahlem_lfag_data &lt;- read_data(file.path(data_path, &quot;Dahlem-(LFAG)-data.txt&quot;))
+tegel_data &lt;- read_data(file.path(data_path, &quot;Tegel-data.txt&quot;))
+tempelhof_data &lt;- read_data(file.path(data_path, &quot;Tempelhof-data.txt&quot;))</code></pre>
+<p>It makes sense to take a look at the included parameter files to get an idea what kind of data I’m working with. These are in German (umlauts!), so I’ll use <code>guess_encoding()</code> from the <code>readr</code> library to figure out which ISO I need.</p>
+<pre class="r"><code>guess_encoding(&quot;datasets/berlin_climate_data/Dahlem-(FU)-params.txt&quot;) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">encoding</th>
+<th align="right">confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">ISO-8859-1</td>
+<td align="right">0.64</td>
+</tr>
+<tr class="even">
+<td align="left">ISO-8859-9</td>
+<td align="right">0.27</td>
+</tr>
+<tr class="odd">
+<td align="left">ISO-8859-2</td>
+<td align="right">0.24</td>
+</tr>
+</tbody>
+</table>
+<p>ISO-8859-1 it is. I don’t care too much about the details of each station, so I’ll just import one file, <code>Tempelhof-params.txt</code>, to gain some insight into the parameters, i.e. abbreviations, units used, etc.</p>
+<pre class="r"><code># load parameter file
+data_path &lt;- file.path(&quot;datasets&quot;, &quot;berlin_climate_data&quot;, &quot;Tempelhof-params.txt&quot;)
+tempelhof_params &lt;- read_delim(file = data_path,
+                               delim = &quot;;&quot;,
+                               col_types = paste0(rep(&quot;c&quot;, 13), collapse = &quot;&quot;),
+                               locale = locale(encoding = &quot;ISO-8859-1&quot;)
+                               )
+
+# filter and show parameters
+tempelhof_params %&gt;%
+    select(2:7) %&gt;% 
+    filter(!duplicated(Parameter) &amp; !is.na(Parameter)) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Von_Datum</th>
+<th align="left">Bis_Datum</th>
+<th align="left">Stationsname</th>
+<th align="left">Parameter</th>
+<th align="left">Parameterbeschreibung</th>
+<th align="left">Einheit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">19740101</td>
+<td align="left">19741231</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">FM</td>
+<td align="left">Tagesmittel der Windgeschwindigkeit m/s Messnetz 3</td>
+<td align="left">m/sec</td>
+</tr>
+<tr class="even">
+<td align="left">19740101</td>
+<td align="left">19741231</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">FX</td>
+<td align="left">Maximum der Windspitze Messnetz 3</td>
+<td align="left">m/sec</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">NM</td>
+<td align="left">Tagesmittel des Bedeckungsgrades</td>
+<td align="left">Achtel</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">PM</td>
+<td align="left">Tagesmittel des Luftdrucks</td>
+<td align="left">hpa</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">RSK</td>
+<td align="left">tgl. Niederschlagshoehe</td>
+<td align="left">mm</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">RSKF</td>
+<td align="left">tgl. Niederschlagsform (=Niederschlagshoehe_ind)</td>
+<td align="left">nummerischer Code</td>
+</tr>
+<tr class="odd">
+<td align="left">19701117</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">SDK</td>
+<td align="left">tgl. Sonnenscheindauer</td>
+<td align="left">Stunde</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">SHK_TAG</td>
+<td align="left">Schneehoehe Tageswert</td>
+<td align="left">cm</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TGK</td>
+<td align="left">Minimum der Lufttemperatur am Erdboden in 5cm Hoehe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TMK</td>
+<td align="left">Tagesmittel der Temperatur</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TNK</td>
+<td align="left">Tagesminimum der Lufttemperatur in 2m Hoehe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TXK</td>
+<td align="left">Tagesmaximum der Lufttemperatur in 2m Höhe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">UPM</td>
+<td align="left">Tagesmittel der Relativen Feuchte</td>
+<td align="left">%</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">VPM</td>
+<td align="left">Tagesmittel des Dampfdruckes</td>
+<td align="left">hpa</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="tidying-the-data" class="section level3">
+<h3>Tidying the data</h3>
+<p>There are a couple more changes to be made before I can start visualizing climate change in Berlin. First, <a href="https://www.tidyverse.org/">tidyverse</a> magic works most potently on <em>long</em> data, but the DW uses <em>wide</em> format (<a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data">see the difference here</a>). Second, the variable abbreviations are hard to understand (FM, RSK, etc.), so I should replace them with something else. Third and last, I now have four datasets, one for each Berlin weather station, but one would be preferable.</p>
+<p>I’ll change the variable names using the following map.</p>
+<pre class="r"><code>var_names &lt;- c(&quot;Date&quot; = &quot;MESS_DATUM&quot;,
+               &quot;Avg. Wind Speed (m/sec)&quot; = &quot;FM&quot;,
+               &quot;Max Wind Speed (m/sec)&quot; = &quot;FX&quot;,
+               &quot;Avg. Cloud Cover (8th)&quot; = &quot;NM&quot;,
+               &quot;Avg. Air Pressure (hPa)&quot; = &quot;PM&quot;,
+               &quot;Precipitation (mm)&quot; = &quot;RSK&quot;,
+               &quot;Sun Shine Duration (h)&quot; = &quot;SDK&quot;,
+               &quot;Snow (cm)&quot; = &quot;SHK_TAG&quot;,
+               &quot;Avg. Temp. (°C)&quot; = &quot;TMK&quot;,
+               &quot;Min. Temp. (°C)&quot; = &quot;TNK&quot;,
+               &quot;Max Temp. (°C)&quot; = &quot;TXK&quot;,
+               &quot;Avg. Humidity (%)&quot; = &quot;UPM&quot;
+               )</code></pre>
+<p>The following <code>tidy_data</code> function reduces each data frame to the set of variables I’m interested in, converts the character strings to numbers and dates, and <code>gathers</code> the variables into long format.</p>
+<pre class="r"><code>tidy_data &lt;- function(df, vars, station_name){
+    df &lt;- select(df, vars)
+    df &lt;- as_tibble(sapply(df, as.double))
+    df$Date &lt;- ymd(df$Date)
+    df &lt;- gather(df, key = &quot;Variable&quot;, value = &quot;Value&quot;, 2:12)
+    df$Station &lt;- station_name
+    df
+}</code></pre>
+<p>I can now call <code>tidy_data</code> for each station, and then combine the station data into one data frame <code>berlin_data</code>.</p>
+<pre class="r"><code># call tidy_data for each station dataset
+dahlem_lfag_data &lt;- tidy_data(dahlem_lfag_data, var_names, &quot;Dahlem (LFAG)&quot;)
+dahlem_fu_data &lt;- tidy_data(dahlem_fu_data, var_names, &quot;Dahlem (FU)&quot;)
+tegel_data &lt;- tidy_data(tegel_data, var_names, &quot;Tegel&quot;)
+tempelhof_data &lt;- tidy_data(tempelhof_data, var_names, &quot;Tempelhof&quot;)
+
+# combine station data into one data frame
+berlin_data &lt;- rbind(dahlem_lfag_data, dahlem_fu_data, tegel_data, tempelhof_data)</code></pre>
+<p>There’s just one final change I’d like to make: The values reflect daily averages, and measurement began in the 19th century for some stations, so I’m faced with hundreds of thousands of observations! To make things more manageable I’ll include different time scales, e.g. years, months, weeks, days, and <a href="https://en.wikipedia.org/wiki/Season#Meteorological">meteorological seasons</a>. While I’m at it I’ll also convert months and seasons to factors.</p>
+<pre class="r"><code># add years, months, weeks, days, and seasons
+berlin_data &lt;- berlin_data %&gt;% 
+    mutate(Year = year(Date),
+           Month = month(Date),
+           Week = week(Date),
+           Day = day(Date),
+           Season = case_when(Month %in% c(12, 1, 2) ~ &quot;Winter&quot;,
+                              Month %in% 3:5 ~ &quot;Spring&quot;,
+                              Month %in% 6:8 ~ &quot;Summer&quot;,
+                              Month %in% 9:11 ~ &quot;Fall&quot;,
+                              )
+           )
+
+# turn seasons into factors
+berlin_data$Season &lt;- factor(berlin_data$Season,
+                             ordered = T,
+                             levels = c(&quot;Spring&quot;, &quot;Summer&quot;, &quot;Winter&quot;, &quot;Fall&quot;)
+                             )
+
+# turn months into factors
+berlin_data$Month &lt;- factor(berlin_data$Month,
+                            ordered = T,
+                            levels = 1:12,
+                            labels = c(&quot;January&quot;, &quot;February&quot;, &quot;March&quot;, &quot;April&quot;,
+                                       &quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, 
+                                       &quot;September&quot;, &quot;October&quot;, &quot;November&quot;,
+                                       &quot;December&quot;
+                                       )
+                            )</code></pre>
+</div>
+<div id="visualizing-berlins-changing-climate" class="section level3">
+<h3><a name="analysis"></a>Visualizing Berlin’s changing climate</h3>
+<p>I now have a few hundred thousand observations for each of four Berlin weather stations, which I can freely group based on my analytical needs. The following table shows the total observations (daily averages) for each of Berlin’s four weather stations.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    group_by(Station) %&gt;% 
+    summarise(&quot;number of observations&quot; = n()) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Station</th>
+<th align="right">number of observations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Dahlem (FU)</td>
+<td align="right">273207</td>
+</tr>
+<tr class="even">
+<td align="left">Dahlem (LFAG)</td>
+<td align="right">347446</td>
+</tr>
+<tr class="odd">
+<td align="left">Tegel</td>
+<td align="right">220979</td>
+</tr>
+<tr class="even">
+<td align="left">Tempelhof</td>
+<td align="right">281248</td>
+</tr>
+</tbody>
+</table>
+<p>Let’s first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of yearly variation.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Avg. Temp. (°C)&quot;) %&gt;%
+    group_by(Station, Year) %&gt;% 
+    summarise(Value = mean(Value, na.rm = T)) %&gt;%
+    ggplot(aes(x = Year, y = Value)) +  
+    geom_line(aes(color = Station)) +
+    geom_smooth(se = F, method = &quot;loess&quot;, span = .8) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    labs(title = &quot;Avg. Yearly Temperature (°C), 1876-2017&quot;,
+         y = &quot;Temp.&quot;
+         ) + 
+    scale_x_continuous(limits = c(1876, 2017),
+                       breaks = seq(1877, 2017,
+                                    by = 10
+                                    )
+                       ) + 
+    scale_y_continuous(breaks = seq(3.5, 11.5,
+                                    by = 1)
+                       )</code></pre>
+<p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/viz%20mean%20yearly%20temps-1.png" width="672" /></p>
+<p>Something else that immediately jumps out is the precipitous drop in 1945, which seems to correspond to <a href="https://en.wikipedia.org/wiki/Stunde_Null#Der_Elendswinter_(%22The_miserable_winter%22,_1945%E2%80%9346)"><em>Der Elendswinter</em></a>, a particulary harsh winter in 1945-1946. Strangely, there’s not much information about this event to be found online beyond the above Wikipedia article. It might just be a glitch, but it doesn’t really effect the overall trend, so I’m not going to worry about it too much.</p>
+<p>The next chart compares changes in Berlin’s average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from NASA.</p>
+<pre class="r"><code># get global temp. data from NASA
+nasa_data &lt;- read_tsv(&quot;https://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt&quot;,
+                      col_names = c(&quot;Year&quot;, &quot;World&quot;, &quot;lowess&quot;),
+                      col_types = &quot;idd&quot;
+                      )</code></pre>
+<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graphic shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature <em>change</em> in °C, and <em>not</em> average yearly temperature.</p>
+<pre class="r"><code># calculate change from mean for Berlin, add NASA data, visualize
+berlin_data %&gt;%
+    filter(Variable == &quot;Avg. Temp. (°C)&quot;,
+           ) %&gt;%
+    group_by(Year) %&gt;%
+    summarise(Value = mean(Value, na.rm = T)) %&gt;%
+    mutate(Berlin = Value - mean(Value)) %&gt;%
+    right_join(nasa_data, by = &quot;Year&quot;) %&gt;%
+    select(Year, Berlin, World) %&gt;%
+    gather(key = &quot;Scope&quot;, value = &quot;Value&quot;, 2:3) %&gt;%
+    ggplot(aes(x = Year, y= Value, color = Scope)) +
+    geom_smooth(size = 1, method = &quot;loess&quot;, span = .5) +
+    geom_hline(yintercept = 0, linetype = 8) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    scale_x_continuous(limits = c(1880, 2017),
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(breaks = seq(-1, 2, .5)) +
+    expand_limits(y = -1.1) +
+    labs(color = &quot;&quot;,
+         title = &quot;Temp. Change in °C, World vs. Berlin (LOESS), 1877-2017&quot;,
+         y = &quot;Change (°C)&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-13-an-analysis-of-berlin-s-changing-climate_files/figure-html/viz%20global%20and%20local%20temp%20change-1.png" width="672" /></p>
+</div>
