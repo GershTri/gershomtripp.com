@@ -1,5 +1,5 @@
 ---
-title: An analysis of Berlin’s changing climate.
+title: An Analysis of Berlin’s Changing Climate.
 author: Gershom Tripp
 date: '2018-09-13'
 slug: an-analysis-of-berlin-s-changing-climate
@@ -25,15 +25,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Introduction
 
-This post is inspired in part by conversations I've had, or overheard, about Berlin's "worsening" weather. Putting aside individual interpretations of what "worse" means ("It's too cold and rainy!", say, "It's too hot!", say others), there's definitely something to the general observation that Berlin's climate is changing. I've witnessed it even in the 11+ years that I've lived here.
+This analysis is inspired in part by conversations I've had, or overheard, about Berlin's "worsening" weather. Putting aside individual interpretations of what "worse" means ("It's too cold and rainy!", say some, "It's too hot!", say others), there's definitely something to the general observation that Berlin's climate is changing. I've personally witnessed it in the 11+ years that I've lived here.
 
 Beyond the motivation of being an intolerable [Rechthaber](https://www.dict.cc/?s=rechthaber) at future gripe sessions, I think it's important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening [now](https://climate.nasa.gov/effects/), and there's some evidence that it's accelerating even [faster than predicted](https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record).
 
-For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis below is cutting edge or original. I simply visualize some data that others have collected. That said, I should still be able reach some conclusions.
+For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis below is cutting edge or original. That being said, I should still be able reach some conclusions.
 
 The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing, [skip to the analysis](#analysis).
 
-### Data hygiene
+### Massaging the data
 
 First off, the libraries:
 
@@ -45,11 +45,14 @@ library(stats)
 library(psych)
 library(lubridate)
 library(ggplot2)
+library(ggridges)
 library(corrplot)
 ```
 
-The data is a subset of the [Deutscher Wetterdienst](https://www.dwd.de/DE/Home/home_node.html)'s
-extensive repository of weather data. It's possible to get hourly averages, going back decades, but I decided daily averages were enough for this analysis. I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.
+The data is a subset of the [Deutscher Wetterdienst](https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivtagmonat.html)'s
+extensive repository of weather data. It's possible to get hourly measurements, going back decades, but I decided daily averages were enough for this analysis. Downloading the data programmatically from the DWD archive interface would have been horribly complex, so I did it the old-fashioned way: I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.
+
+*Edit*: While putting the final touches on this post I discovered that the DWD offers FTP access to their databases via the [Climate Data Center](ftp://ftp-cdc.dwd.de/pub/CDC/).
 
 The data files are semicolon-delimited. To keep things simple I'll import
 everything as character strings. Numeric and date objects are converted later,
@@ -223,20 +226,23 @@ berlin_data %>%
 Let's first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of yearly variation.
  
 ```{r viz mean yearly temps, message=FALSE}
+# create variable to hold theme (reusable)
+thm <- theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          )
+
 berlin_data %>% 
     filter(Variable == "Avg. Temp. (°C)") %>%
     group_by(Station, Year) %>% 
     summarise(Value = mean(Value, na.rm = T)) %>%
     ggplot(aes(x = Year, y = Value)) +  
     geom_line(aes(color = Station)) +
-    geom_smooth(se = F, method = "loess", span = .2) +
-    theme_minimal() + 
-    theme(panel.grid.minor = element_blank(),
-          panel.grid.major.x = element_blank()
-          ) +
+    geom_smooth(se = F, method = "lm", span = .2) +
     labs(title = "Avg. Yearly Temperature (°C), 1876-2017",
          y = "Temp."
          ) +
+    thm +
     scale_x_continuous(limits = c(1876, 2017),
                        breaks = seq(1877, 2017, by = 10)
                        ) +
@@ -245,7 +251,7 @@ berlin_data %>%
                        )
 ```
 
-Something else that immediately jumps out is the precipitous drop in 1945. Histograms of each year from 1940-1950 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however, that is to say, some data is missing, and the data that is available clusters around the low end.
+Something else that immediately jumps out is the precipitous drop in 1945. Histograms of each year from 1940-1950 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however - that is to say, some data is missing - and the data that is available clusters around the low end. A table giving the number of observations (i.e. number of daily averages) confirms this.
 
 ```{r viz distribution of temps 1941-1949}
 berlin_data %>% 
@@ -262,16 +268,28 @@ berlin_data %>%
           panel.grid.major.x = element_blank(),
           panel.spacing = unit(2, "lines")
           ) +
-    labs(title = "Histograms of Temperature, 1941-1949",
+    labs(title = "Distribution of Annual Temperatures (°C), 1941-1949",
          x = "Temperature"
          )
+
+berlin_data %>% 
+    filter(Station == "Dahlem (LFAG)",
+           Variable == "Avg. Temp. (°C)",
+           Year %in% 1941:1949,
+           !is.na(Value)
+           ) %>% 
+    group_by(Year) %>% 
+    summarize("number of obs." = n(),
+              "annual avg. temp." = mean(Value))
 ```
 
-
-The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. That one outlier likely won't really effect any overall trends, but it makes sense to drop all data from 1945, nonetheless.
+The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I that wouldn't affect the overall trends at all, so I'll just drop 1945 instead. I'll also aggregate the station data to make later visualizations a little easier.
 
 ```{r drop 1945}
-berlin_data <- filter(berlin_data, Year != 1945)
+berlin_data <- berlin_data <- filter(berlin_data, Year != 1945) %>% 
+    group_by(Year, Month, Week, Day, Season, Date, Variable) %>% 
+    summarise(Value = mean(Value, na.rm = T)) %>% 
+    ungroup()
 ```
 
 The next chart compares changes in Berlin's average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from [NASA](https://climate.nasa.gov/vital-signs/global-temperature/).
@@ -285,7 +303,7 @@ nasa_data <- read_tsv("https://climate.nasa.gov/system/internal_resources/detail
 ```
 
 
-I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average yearly temperature *change* in °C, and *not* average yearly temperature. What I call change NASA calls **annual average anomaly**, which is the "change in global surface temperature relative to 1951-1980 average temperatures". To maintain consistency with NASA's data I'll also transform the data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with `span = 0.2` to cut down on some of the noise.
+I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average annual temperature *change* in °C, and *not* average annual temperature. What I call change NASA calls **annual average anomaly**, which is the "change in global surface temperature relative to 1951-1980 average temperatures". To maintain consistency with NASA's data I'll also transform the data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with `span = 0.2` to cut down on some of the noise.
 
 ```{r viz global and local temp change}
 berlin_data %>%
@@ -310,10 +328,7 @@ berlin_data %>%
     ggplot(aes(x = Year, y= Value)) +
     geom_line(aes(color = Scope), size = 1) +
     geom_hline(yintercept = 0, linetype = 8) +
-    theme_minimal() + 
-    theme(panel.grid.minor = element_blank(),
-          panel.grid.major.x = element_blank()
-          ) +
+    thm + 
     scale_x_continuous(limits = c(1876, 2017),
                        breaks = seq(1877, 2017, by = 10)
                        ) +
@@ -325,32 +340,115 @@ berlin_data %>%
          )
 ```
 
-```{r temp_greater_25}
+The upward trend in mean annual temperatures in Berlin broadly matches that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperatures in Berlin have increased by about 2°C since 1925, compared to a 1°C globally.
+
+```{r temperatures greater that 25C}
 berlin_data %>% 
     filter(Variable == "Max Temp. (°C)",
-           Month %in% c("June", "July", "August"),
-           Year > 1956,
-           Value >= 25
+           Month %in% c("May", "June", "July", "August", "September"),
+           Year > 1956
            ) %>%
-    group_by(Year, Month, Day) %>% 
-    summarise(Value = mean(Value)) %>% 
     group_by(Year, Month) %>% 
-    summarise(Value = n()) %>% 
-    ggplot(aes(x = Year, y = Value)) +
-        geom_line() +
-        geom_smooth(method = "loess", span = .8) +
-        facet_wrap(~ Month) + 
-        scale_x_continuous(limits = c(1957, 2017),
-                           breaks = seq(1957, 2017, by = 10)
-                           ) + 
-        scale_y_continuous(limits = c(0, 30),
-                           breaks = seq(0, 30, by = 3)) +
-        theme_minimal() + 
-        theme(panel.grid.minor = element_blank(),
-              panel.grid.major.x = element_blank(),
-              panel.spacing.x = unit(1.5, "lines")
-              ) +
-        labs(title = "Number of Days with Temp. > 25°C, 1957-2017",
-             y = "Number of Days"
-             )
+    summarise(Value = sum(Value > 25)/n()) %>% 
+    ggplot(aes(x = Year, y = Value, color = Month)) +
+    geom_line(alpha = .3) +
+    geom_smooth(method = "lm", se = F) +
+    scale_x_continuous(limits = c(1957, 2017),
+                       breaks = seq(1957, 2017, by = 10)
+                       ) +
+    scale_y_continuous(limits = c(0, 1),
+                       breaks = seq(0, 1, by = .1)) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.spacing.x = unit(1.5, "lines")
+          ) +
+    labs(title = "Proportion of Days with Temp. > 25°C, 1957-2017",
+         y = "Proportion"
+         )
+
 ```
+The spike in July corresponds with the [2006 European heat wave](https://en.wikipedia.org/wiki/2006_European_heat_wave).
+
+
+### !TODO
+    * 
+
+```{r avg. daily sunshine by month}
+berlin_data %>% 
+    filter(Variable == "Sun Shine Duration (h)",
+           Year > 1956,
+           Month %in% c("May", "June", "July", "August", "September"),
+           !is.na(Value)
+           ) %>%
+    group_by(Year, Month) %>% 
+    summarize(Value = mean(Value)) %>% 
+    ggplot(aes(x = Year, y = Value, color = Month)) +
+    geom_line(alpha = .3) +
+    geom_smooth(method = "lm", se = F) + 
+    scale_x_continuous(limits = c(1957, 2017),
+                       breaks = seq(1957, 2017, by = 10)
+                       ) + 
+    scale_y_continuous(limits = c(2.4, 12.5),
+                       breaks = seq(2.5, 12.5, by = 1)) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    labs(title = "Avg. Daily Sunshine (Hours), 1957-2017",
+         y= "Duration (h)"
+         )
+```
+
+```{r avg. daily precipitation by month}
+berlin_data %>% 
+    filter(Variable == "Precipitation (mm)",
+           Year > 1956,
+           Month %in% c("May", "June", "July", "August", "September"),
+           !is.na(Value)
+           ) %>%
+    group_by(Year, Month) %>% 
+    summarize(Value = mean(Value)) %>% 
+    ggplot(aes(x = Year, y = Value, color = Month)) +
+    geom_line(alpha = .3) +
+    geom_smooth(method = "lm", se = F) + 
+    scale_x_continuous(limits = c(1957, 2017),
+                       breaks = seq(1957, 2017, by = 10)
+                       ) + 
+    scale_y_continuous(limits = c(-0.5, 7.5),
+                       breaks = seq(0, 7.5, by = 1)) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    labs(title = "Avg. Daily Precipitation (mm), 1957-2017",
+         y= "Amount (mm)"
+         )
+```
+
+```{r proportion days without precipitation by month}
+berlin_data %>% 
+    filter(Variable == "Precipitation (mm)",
+           Year > 1956,
+           Month %in% c("May", "June", "July", "August", "September"),
+           !is.na(Value)
+           ) %>%
+    group_by(Year, Month) %>% 
+    summarize(Value = sum(Value == 0)/n()) %>% 
+    ggplot(aes(x = Year, y = Value, color = Month)) +
+    geom_line(alpha = .3) +
+    geom_smooth(method = "lm", se = F) + 
+    scale_x_continuous(limits = c(1957, 2017),
+                       breaks = seq(1957, 2017, by = 10)
+                       ) + 
+    scale_y_continuous(limits = c(0.1, .95),
+                       breaks = seq(0.1, .9, by = .1)) +
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) +
+    labs(title = "Days Without Precipitation (Proportion), 1957-2017",
+         y= "Proportion"
+         )
+```
+
