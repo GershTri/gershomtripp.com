@@ -3,7 +3,6 @@
 section.header .avatar {
   box-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
 }
-
 .avatar {
   min-width: 100px;
   border: 3px solid black;
@@ -11,13 +10,32 @@ section.header .avatar {
   float: right;
   margin-left: 50px;
 }
-
 table {
   font-size: .9rem;
 }
-
 section.main .content .markdown pre code {
   /* enclosed by 3 backticks (```) */
   padding: 0;
   font-size: .95rem;
+}
+section.main .content .page-heading {
+  font-size: 25px;
+  font-family: 'Raleway', 'Helvetica Neue', 'Arial', sans-serif;
+  letter-spacing: -0.005rem;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+section.main .content .markdown h1 {
+  font-size: 1.7rem;
+  margin-bottom: 2rem;
+}
+section.main .content .markdown h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+section.main .content .markdown h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }

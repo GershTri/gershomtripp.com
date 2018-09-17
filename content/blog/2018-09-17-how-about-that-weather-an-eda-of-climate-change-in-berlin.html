@@ -1,0 +1,599 @@
+---
+title: How About That Weather!? - An EDA of Climate Change in Berlin.
+author: Gershom Tripp
+date: '2018-09-17'
+slug: how-about-that-weather-an-eda-of-climate-change-in-berlin
+categories:
+  - R
+tags:
+  - Berlin
+  - climate
+---
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>What follows is an <a href="https://en.wikipedia.org/wiki/Exploratory_data_analysis">EDA</a> inspired by conversations I’ve had about Berlin’s changing climate, something I’ve personally witnessed in the 11+ years that I’ve lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she’s imagining things. In the end we might both have to modify our positions a bit.</p>
+<p>Beyond mere curosity and <a href="https://www.dict.cc/deutsch-englisch/Besserwisser.html">Besserwisserei</a>, I think it’s important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening <a href="https://climate.nasa.gov/effects/">now</a>, and there’s some evidence that it’s accelerating even <a href="https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record">faster than predicted</a>.</p>
+<p>For the record, I’m neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I’ll also avoid making any inferences based on the data. That having been said, given the quality of the data I should still be able draw some conclusions.</p>
+<p>The next couple of sections cover how I wrangle the data into a more manageable form. If you’re not interested in that kind of thing, <a href="#analysis">skip to the analysis</a>.</p>
+<hr />
+</div>
+<div id="data-import-and-preparation" class="section level2">
+<h2>Data Import and Preparation</h2>
+<p>First off, the libraries:</p>
+<pre class="r"><code>library(readr)
+library(dplyr)
+library(tidyr)
+library(stats)
+library(lubridate)
+library(ggplot2)</code></pre>
+<p>The data is a subset of the <a href="https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivtagmonat.html">Deutscher Wetterdienst</a>’s extensive repository of weather data. It’s possible to get hourly measurements, going back decades, but I decided daily averages were enough for this analysis. Downloading the data programmatically from the DWD archive interface would have been horribly complex, so I did it the old-fashioned way: I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.</p>
+<p><em>Edit</em>: While putting the final touches on this post I discovered that the DWD offers FTP access to their databases via the <a href="ftp://ftp-cdc.dwd.de/pub/CDC/">Climate Data Center</a>.</p>
+<p>The data files are semicolon-delimited. To keep things simple I’ll import everything as character strings. Numeric and date objects are converted later, as needed. The value <code>-999</code> is imported as <code>NA</code>.</p>
+<pre class="r"><code># get the names of  the data files, import them as text, remove white space and
+# overwrite originals with de-whitespaced files
+data_path &lt;- file.path(&quot;datasets&quot;, &quot;berlin_climate_data&quot;)
+file_names &lt;- dir(data_path)
+file_names &lt;- file_names[grep(pattern = &quot;data&quot;, file_names)]
+
+for (file_name in file_names){
+    file_path &lt;- file.path(data_path, file_name)
+    file &lt;- read_file(file_path)
+    file &lt;- gsub(&quot; &quot;, &quot;&quot;, file)
+    write_file(file, file_path)
+}
+
+# wrapper function to load data with defaults
+read_data &lt;- function(path){
+    read_delim(file = path,
+               delim = &quot;;&quot;,
+               col_types = paste0(rep(&quot;c&quot;, 19), collapse = &quot;&quot;),
+               na = &quot;-999&quot;
+               )
+}
+
+# read in the data
+dahlem_fu_data &lt;- read_data(file.path(data_path, &quot;Dahlem-(FU)-data.txt&quot;))
+dahlem_lfag_data &lt;- read_data(file.path(data_path, &quot;Dahlem-(LFAG)-data.txt&quot;))
+tegel_data &lt;- read_data(file.path(data_path, &quot;Tegel-data.txt&quot;))
+tempelhof_data &lt;- read_data(file.path(data_path, &quot;Tempelhof-data.txt&quot;))</code></pre>
+<p>It makes sense to take a look at the included parameter files to get an idea what kind of data I’m working with. These are in German (umlauts!), so I’ll use <code>guess_encoding()</code> from the <code>readr</code> library to figure out which ISO I need.</p>
+<pre class="r"><code>guess_encoding(&quot;datasets/berlin_climate_data/Dahlem-(FU)-params.txt&quot;) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">encoding</th>
+<th align="right">confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">ISO-8859-1</td>
+<td align="right">0.64</td>
+</tr>
+<tr class="even">
+<td align="left">ISO-8859-9</td>
+<td align="right">0.27</td>
+</tr>
+<tr class="odd">
+<td align="left">ISO-8859-2</td>
+<td align="right">0.24</td>
+</tr>
+</tbody>
+</table>
+<p>ISO-8859-1 it is. I don’t care too much about the details of each station, so I’ll just import one file, <code>Tempelhof-params.txt</code>, to gain some insight into the parameters, i.e. abbreviations, units used, etc.</p>
+<pre class="r"><code># load parameter file
+data_path &lt;- file.path(&quot;datasets&quot;, &quot;berlin_climate_data&quot;, &quot;Tempelhof-params.txt&quot;)
+tempelhof_params &lt;- read_delim(file = data_path,
+                               delim = &quot;;&quot;,
+                               col_types = paste0(rep(&quot;c&quot;, 13), collapse = &quot;&quot;),
+                               locale = locale(encoding = &quot;ISO-8859-1&quot;)
+                               )
+
+# filter and show parameters
+tempelhof_params %&gt;%
+    select(2:7) %&gt;% 
+    filter(!duplicated(Parameter) &amp; !is.na(Parameter)) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Von_Datum</th>
+<th align="left">Bis_Datum</th>
+<th align="left">Stationsname</th>
+<th align="left">Parameter</th>
+<th align="left">Parameterbeschreibung</th>
+<th align="left">Einheit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">19740101</td>
+<td align="left">19741231</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">FM</td>
+<td align="left">Tagesmittel der Windgeschwindigkeit m/s Messnetz 3</td>
+<td align="left">m/sec</td>
+</tr>
+<tr class="even">
+<td align="left">19740101</td>
+<td align="left">19741231</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">FX</td>
+<td align="left">Maximum der Windspitze Messnetz 3</td>
+<td align="left">m/sec</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">NM</td>
+<td align="left">Tagesmittel des Bedeckungsgrades</td>
+<td align="left">Achtel</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">PM</td>
+<td align="left">Tagesmittel des Luftdrucks</td>
+<td align="left">hpa</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">RSK</td>
+<td align="left">tgl. Niederschlagshoehe</td>
+<td align="left">mm</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">RSKF</td>
+<td align="left">tgl. Niederschlagsform (=Niederschlagshoehe_ind)</td>
+<td align="left">nummerischer Code</td>
+</tr>
+<tr class="odd">
+<td align="left">19701117</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">SDK</td>
+<td align="left">tgl. Sonnenscheindauer</td>
+<td align="left">Stunde</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">SHK_TAG</td>
+<td align="left">Schneehoehe Tageswert</td>
+<td align="left">cm</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TGK</td>
+<td align="left">Minimum der Lufttemperatur am Erdboden in 5cm Hoehe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TMK</td>
+<td align="left">Tagesmittel der Temperatur</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TNK</td>
+<td align="left">Tagesminimum der Lufttemperatur in 2m Hoehe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">TXK</td>
+<td align="left">Tagesmaximum der Lufttemperatur in 2m Höhe</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">UPM</td>
+<td align="left">Tagesmittel der Relativen Feuchte</td>
+<td align="left">%</td>
+</tr>
+<tr class="even">
+<td align="left">19480101</td>
+<td align="left">20010331</td>
+<td align="left">Berlin-Tempelhof</td>
+<td align="left">VPM</td>
+<td align="left">Tagesmittel des Dampfdruckes</td>
+<td align="left">hpa</td>
+</tr>
+</tbody>
+</table>
+<div id="tidying-the-data" class="section level3">
+<h3>Tidying the data</h3>
+<p>There are a couple more changes to be made before I can start visualizing. First, <a href="https://www.tidyverse.org/">tidyverse</a> magic works most potently on <em>long</em> data, but the DW uses <em>wide</em> format (<a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data">see the difference here</a>). Second, the variable abbreviations are hard to understand (FM, RSK, etc.), so I should replace them with something else. Third and last, I now have four datasets, one for each Berlin weather station, but one would be preferable.</p>
+<p>I’ll change the variable names using the following map.</p>
+<pre class="r"><code>var_names &lt;- c(&quot;Date&quot; = &quot;MESS_DATUM&quot;,
+               &quot;Avg. Wind Speed (m/sec)&quot; = &quot;FM&quot;,
+               &quot;Max Wind Speed (m/sec)&quot; = &quot;FX&quot;,
+               &quot;Avg. Cloud Cover (8th)&quot; = &quot;NM&quot;,
+               &quot;Avg. Air Pressure (hPa)&quot; = &quot;PM&quot;,
+               &quot;Precipitation (mm)&quot; = &quot;RSK&quot;,
+               &quot;Sun Shine Duration (h)&quot; = &quot;SDK&quot;,
+               &quot;Snow (cm)&quot; = &quot;SHK_TAG&quot;,
+               &quot;Avg. Temp. (°C)&quot; = &quot;TMK&quot;,
+               &quot;Min. Temp. (°C)&quot; = &quot;TNK&quot;,
+               &quot;Max Temp. (°C)&quot; = &quot;TXK&quot;,
+               &quot;Avg. Humidity (%)&quot; = &quot;UPM&quot;
+               )</code></pre>
+<p>The following <code>tidy_data</code> function reduces each data frame to the set of variables I’m interested in, converts the character strings to numbers and dates, and <code>gathers</code> the variables into long format.</p>
+<pre class="r"><code>tidy_data &lt;- function(df, vars, station_name){
+    df &lt;- select(df, vars)
+    df &lt;- as_tibble(sapply(df, as.double))
+    df$Date &lt;- ymd(df$Date)
+    df &lt;- gather(df, key = &quot;Variable&quot;, value = &quot;Value&quot;, 2:12)
+    df$Station &lt;- station_name
+    df
+}</code></pre>
+<p>I can now call <code>tidy_data</code> for each station, and then combine the station data into one data frame <code>berlin_data</code>.</p>
+<pre class="r"><code># call tidy_data for each station dataset
+dahlem_lfag_data &lt;- tidy_data(dahlem_lfag_data, var_names, &quot;Dahlem (LFAG)&quot;)
+dahlem_fu_data &lt;- tidy_data(dahlem_fu_data, var_names, &quot;Dahlem (FU)&quot;)
+tegel_data &lt;- tidy_data(tegel_data, var_names, &quot;Tegel&quot;)
+tempelhof_data &lt;- tidy_data(tempelhof_data, var_names, &quot;Tempelhof&quot;)
+
+# combine station data into one data frame
+berlin_data &lt;- rbind(dahlem_lfag_data, dahlem_fu_data, tegel_data, tempelhof_data)</code></pre>
+<p>There’s just one final change I’d like to make: The values reflect daily averages, and measurement began in the 19th century for some stations, so I’m faced with hundreds of thousands of observations! To make things more manageable I’ll include different time scales, e.g. years, months, weeks, days, and <a href="https://en.wikipedia.org/wiki/Season#Meteorological">meteorological seasons</a>. While I’m at it I’ll also convert months and seasons to factors.</p>
+<pre class="r"><code># add years, months, weeks, days, and seasons
+berlin_data &lt;- berlin_data %&gt;% 
+    mutate(Year = year(Date),
+           Month = month(Date),
+           Week = week(Date),
+           Day = day(Date),
+           Season = case_when(Month %in% c(12, 1, 2) ~ &quot;Winter&quot;,
+                              Month %in% 3:5 ~ &quot;Spring&quot;,
+                              Month %in% 6:8 ~ &quot;Summer&quot;,
+                              Month %in% 9:11 ~ &quot;Fall&quot;,
+                              )
+           )
+
+# turn seasons into factors
+berlin_data$Season &lt;- factor(berlin_data$Season,
+                             ordered = T,
+                             levels = c(&quot;Spring&quot;, &quot;Summer&quot;, &quot;Winter&quot;, &quot;Fall&quot;)
+                             )
+
+# turn months into factors
+berlin_data$Month &lt;- factor(berlin_data$Month,
+                            ordered = T,
+                            levels = 1:12,
+                            labels = c(&quot;January&quot;, &quot;February&quot;, &quot;March&quot;, &quot;April&quot;,
+                                       &quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, 
+                                       &quot;September&quot;, &quot;October&quot;, &quot;November&quot;,
+                                       &quot;December&quot;
+                                       )
+                            )</code></pre>
+<hr />
+</div>
+</div>
+<div id="visualizing-berlins-changing-climate" class="section level2">
+<h2><a name="analysis"></a>Visualizing Berlin’s changing climate</h2>
+<p>I now have a few hundred thousand observations for each of four Berlin weather stations, which I can freely group based on my analytical needs. The following table shows the total observations (daily averages) for each of Berlin’s four weather stations.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    group_by(Station) %&gt;% 
+    summarise(&quot;number of observations&quot; = n()) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Station</th>
+<th align="right">number of observations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Dahlem (FU)</td>
+<td align="right">273207</td>
+</tr>
+<tr class="even">
+<td align="left">Dahlem (LFAG)</td>
+<td align="right">347446</td>
+</tr>
+<tr class="odd">
+<td align="left">Tegel</td>
+<td align="right">220979</td>
+</tr>
+<tr class="even">
+<td align="left">Tempelhof</td>
+<td align="right">281248</td>
+</tr>
+</tbody>
+</table>
+<p>Let’s first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of yearly variation.</p>
+<pre class="r"><code># create variable to hold theme (reusable)
+thm &lt;- theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank()
+          )
+
+berlin_data %&gt;% 
+    filter(Variable == &quot;Avg. Temp. (°C)&quot;) %&gt;%
+    group_by(Station, Year) %&gt;% 
+    summarise(Value = mean(Value, na.rm = T)) %&gt;%
+    ggplot(aes(x = Year, y = Value)) +  
+    geom_line(aes(color = Station)) +
+    geom_smooth(se = F, method = &quot;loess&quot;, span = .2) +
+    labs(title = &quot;Avg. Yearly Temperature (°C), 1876-2017&quot;,
+         y = &quot;Temp.&quot;
+         ) +
+    thm +
+    scale_x_continuous(limits = c(1876, 2017),
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(limits = c(3, 12),
+                       breaks = seq(3, 12, by = 1)
+                       )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20mean%20yearly%20temps-1.png" width="672" /></p>
+<p>Also conspicuous is the precipitous drop in 1945. Histograms of each year from 1941-1949 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however - that is to say, some data is missing - and the data that is available clusters around the low end.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Station == &quot;Dahlem (LFAG)&quot;,
+           Variable == &quot;Avg. Temp. (°C)&quot;,
+           Year %in% 1941:1949,
+           !is.na(Value)
+           ) %&gt;% 
+    ggplot(aes(x = Value)) + 
+    geom_histogram(bins = 30) +
+    facet_wrap(~Year) + 
+    theme_minimal() + 
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.spacing = unit(2, &quot;lines&quot;)
+          ) +
+    labs(title = &quot;Distribution of Annual Temperatures (°C), 1941-1949&quot;,
+         x = &quot;Temperature&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20distribution%20of%20temps%201941-1949-1.png" width="672" /></p>
+<p>A table observation counts (i.e. number of daily averages) confirms this.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Station == &quot;Dahlem (LFAG)&quot;,
+           Variable == &quot;Avg. Temp. (°C)&quot;,
+           Year %in% 1941:1949,
+           !is.na(Value)
+           ) %&gt;% 
+    group_by(Year) %&gt;% 
+    summarize(&quot;number of obs.&quot; = n(),
+              &quot;annual avg. temp.&quot; = mean(Value)) %&gt;% 
+    knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Year</th>
+<th align="right">number of obs.</th>
+<th align="right">annual avg. temp.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1941</td>
+<td align="right">365</td>
+<td align="right">7.714247</td>
+</tr>
+<tr class="even">
+<td align="right">1942</td>
+<td align="right">365</td>
+<td align="right">7.910685</td>
+</tr>
+<tr class="odd">
+<td align="right">1943</td>
+<td align="right">365</td>
+<td align="right">9.704110</td>
+</tr>
+<tr class="even">
+<td align="right">1944</td>
+<td align="right">366</td>
+<td align="right">9.407104</td>
+</tr>
+<tr class="odd">
+<td align="right">1945</td>
+<td align="right">170</td>
+<td align="right">3.472353</td>
+</tr>
+<tr class="even">
+<td align="right">1946</td>
+<td align="right">365</td>
+<td align="right">9.191233</td>
+</tr>
+<tr class="odd">
+<td align="right">1947</td>
+<td align="right">365</td>
+<td align="right">8.942740</td>
+</tr>
+<tr class="even">
+<td align="right">1948</td>
+<td align="right">366</td>
+<td align="right">9.934153</td>
+</tr>
+<tr class="odd">
+<td align="right">1949</td>
+<td align="right">365</td>
+<td align="right">9.959726</td>
+</tr>
+</tbody>
+</table>
+<p>The <a href="https://en.wikipedia.org/wiki/Battle_of_Berlin">Battle of Berlin</a> was in the spring of 1945, so there’s really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I that wouldn’t affect the overall trends at all, so I’ll just drop 1945 instead and save myself some time. I’ll also aggregate the station data to make later visualizations a little easier.</p>
+<pre class="r"><code>berlin_data &lt;- berlin_data &lt;- filter(berlin_data, Year != 1945) %&gt;% 
+    group_by(Year, Month, Week, Day, Season, Date, Variable) %&gt;% 
+    summarise(Value = mean(Value, na.rm = T)) %&gt;% 
+    ungroup()</code></pre>
+<p>The next chart compares changes in Berlin’s average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from <a href="https://climate.nasa.gov/vital-signs/global-temperature/">NASA</a>.</p>
+<pre class="r"><code>nasa_data &lt;- read_tsv(&quot;https://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt&quot;,
+                      col_names = c(&quot;Year&quot;, &quot;World&quot;, &quot;lowess&quot;),
+                      col_types = &quot;idd&quot;
+                      )</code></pre>
+<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average annual temperature <em>change</em> in °C, and <em>not</em> average annual temperature. What I call change NASA calls <strong>annual average anomaly</strong>, which is the “change in global surface temperature relative to 1951-1980 average temperatures”. To maintain consistency with NASA’s data I’ll also transform the Berlin data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with <code>span = 0.2</code> to cut out some of the noise.</p>
+<pre class="r"><code>berlin_data %&gt;%
+    filter(Variable == &quot;Avg. Temp. (°C)&quot;,
+           ) %&gt;%
+    group_by(Year) %&gt;%
+    summarise(Value = mean(Value, na.rm = T)) %&gt;%
+    
+    # put Berlin data in relation to 1951-1980 average
+    mutate(Berlin = Value - mean(filter(.data = .,
+                                        Year %in% 1951:1980
+                                        )[[&quot;Value&quot;]]
+                                 )
+           ) %&gt;%  
+    right_join(nasa_data, by = &quot;Year&quot;) %&gt;%
+    select(Year, Berlin, World) %&gt;%
+    filter(!is.na(Berlin), !is.na(World)) %&gt;% 
+    
+    # loess transform
+    mutate(Berlin = predict(loess(Berlin ~ Year, data = ., span = 0.2)),
+           World = predict(loess(World ~ Year, data = ., span = 0.2))
+           ) %&gt;% 
+    
+    # tidy and plot
+    gather(key = &quot;Scope&quot;, value = &quot;Value&quot;, 2:3) %&gt;%
+    ggplot(aes(x = Year, y= Value)) +
+    geom_line(aes(color = Scope), size = 1) +
+    geom_hline(yintercept = 0, linetype = 8) +
+    thm + 
+    scale_x_continuous(limits = c(1876, 2017),
+                       breaks = seq(1877, 2017, by = 10)
+                       ) +
+    scale_y_continuous(limits = c(-1, 2),
+                       breaks = seq(-1, 2, .5)) +
+    labs(color = &quot;&quot;,
+         title = &quot;Temp. Change in °C (LOESS), World vs. Berlin, 1877-2017&quot;,
+         y = &quot;Change (°C)&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20global%20and%20local%20temp%20change-1.png" width="672" /></p>
+<p>The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperatures have increased by about 2°C since 1925, compared to a 1°C globally.</p>
+<p>The final four plots</p>
+<pre class="r"><code>filter_group &lt;- function(df){
+    df %&gt;% filter(Month %in% c(&quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, &quot;September&quot;),
+                  Year &gt; 1956
+                  ) %&gt;%
+    group_by(Year, Month)
+    }
+    
+gg_geoms_x_scale &lt;- function(df){
+    df %&gt;% ggplot(aes(x = Year, y = Value, color = Month)) +
+        geom_line(alpha = .25) +
+        geom_smooth(method = &quot;loess&quot;, span = 0.5, se = F) +
+        scale_x_continuous(limits = c(1957, 2017),
+                           breaks = seq(1957, 2017, by = 10)
+                           )
+    }</code></pre>
+<p>Predictably, the proportion of summer days with a maximum temperature above 25°C has gone up since 1957, in some cases dramatically. In August, for instance, the number has nearly doubled, equating to about a week more of warm days. July has seen a similar increase, and even May and September have seen the number of +25°C days go up. June seems to be a bit of an outlier as the number has remained relatively stable, although there has been some fluctuation.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Max Temp. (°C)&quot;) %&gt;%
+    filter_group() %&gt;% 
+    summarise(Value = sum(Value &gt; 25)/n()) %&gt;% 
+    gg_geoms_x_scale() +
+    scale_y_continuous(limits = c(0, 1),
+                       breaks = seq(0, 1, by = .1)) +
+    thm + 
+    labs(title = &quot;Proportion of Days with Temp. &gt; 25°C, 1957-2017&quot;,
+         y = &quot;Proportion&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/temperatures%20greater%20that%2025C-1.png" width="672" /></p>
+<p>The average number of hours of daily sunshine appears to have remained fairly stable at least since 1977. There is some fluctuation, but there is no clear trend in any direction. I take this to mean that these months have not become significantly more overcast (or, conversely, sunnier).</p>
+<p>There is, however, a clear downward trend for the months September and June from 1957 to about 1985. These two months appear to have lost about two hours each. I have no idea how that translates to daily cloud cover, but it’s clear that June and September were once sunnier than they are today.</p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Sun Shine Duration (h)&quot;) %&gt;%
+    filter_group() %&gt;% 
+    summarize(Value = mean(Value)) %&gt;% 
+    gg_geoms_x_scale() +
+    scale_y_continuous(limits = c(2.4, 12.5),
+                       breaks = seq(2.5, 12.5, by = 1)
+                       ) +
+    thm +
+    labs(title = &quot;Avg. Daily Sunshine (Hours), 1957-2017&quot;,
+         y= &quot;Duration (h)&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/avg.%20daily%20sunshine%20by%20month-1.png" width="672" /></p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Precipitation (mm)&quot;) %&gt;%
+    filter_group() %&gt;% 
+    summarize(Value = mean(Value)) %&gt;% 
+    gg_geoms_x_scale() + 
+    scale_y_continuous(limits = c(-0.5, 7.5),
+                       breaks = seq(0, 7.5, by = 1)) +
+    thm + 
+    labs(title = &quot;Avg. Daily Precipitation (mm), 1957-2017&quot;,
+         y= &quot;Amount (mm)&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/avg.%20daily%20precipitation%20by%20month-1.png" width="672" /></p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Precipitation (mm)&quot;) %&gt;%
+    filter_group() %&gt;% 
+    summarize(Value = sum(Value == 0)/n()) %&gt;% 
+    gg_geoms_x_scale() + 
+    scale_y_continuous(limits = c(0.1, .95),
+                       breaks = seq(0.1, .9, by = .1)) +
+    thm + 
+    labs(title = &quot;Days Without Precipitation (Proportion), 1957-2017&quot;,
+         y= &quot;Proportion&quot;
+         )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/proportion%20days%20without%20precipitation%20by%20month-1.png" width="672" /></p>
+<p>The last plot displays the number of days per month where there is at least a -5 hPa drop in air pressure compared to the previous day. Although this measure is obviously not perfect, my layperson intuition tells me that an increase in the number of such drops might hint at an increase in storm fronts of a certain intensity. Feel free to let me know in the comments if this is a terribly misled idea.</p>
+<p>The choice of a -5 hPa drop is not completely arbitrary. <a href="http://www.bohlken.net/airpressure2.htm"></a></p>
+<pre class="r"><code>berdat_sub &lt;- berlin_data %&gt;%
+    filter(Month %in% c(&quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, &quot;September&quot;),
+           Year &gt; 1956) %&gt;%
+    spread(Variable, Value) %&gt;% 
+    select(7:17, -`Snow (cm)`, -`Avg. Cloud Cover (8th)`)
+
+names(berdat_sub) &lt;- c(&quot;PRESS&quot;, &quot;HUMID&quot;, &quot;TEMP_AVG&quot;, &quot;WIND_AVG&quot;, &quot;TEMP_MAX&quot;,
+                       &quot;WIND_MAX&quot;, &quot;TEMP_MIN&quot;, &quot;PRECIP&quot;, &quot;SUN&quot;)
+
+berdat_cortest &lt;- psych::corr.test(x = berdat_sub, method = &quot;spearman&quot;)
+
+corrplot::corrplot(berdat_cortest$r,
+                   p.mat = berdat_cortest$p,
+                   sig.level = .001,
+                   type = &quot;upper&quot;,
+                   method = &quot;number&quot;,
+                   order = &quot;AOE&quot;,
+                   tl.cex = .8,
+                   title = &quot;Correlogram (rho) of Selected Variables&quot;,
+                   mar = c(0, 0, 2, 0)
+                   )</code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/correlogram%20of%20selected%20values-1.png" width="672" /></p>
+<pre class="r"><code>berlin_data %&gt;% 
+    filter(Variable == &quot;Avg. Air Pressure (hPa)&quot;) %&gt;% 
+    filter_group() %&gt;% 
+    mutate(Value = (lag(Value) - Value)) %&gt;% 
+    filter(!is.na(Value), Value &lt; -5) %&gt;%
+    group_by(Year, Month) %&gt;% 
+    summarize(Value = n()) %&gt;% 
+    gg_geoms_x_scale() + 
+    scale_y_continuous(limits = c(1, 9),
+                       breaks = seq(1, 9, by = 1)
+                       ) +
+    thm + 
+    labs(title = &quot;Drop in Air Pressure (hPa) from Previous Day &gt; 5&quot;,
+         y= &quot;Number of Days&quot;
+         )    </code></pre>
+<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/drop%20in%20air%20pressure%20greater%20than%20-5-1.png" width="672" /></p>
+<div id="conclusion" class="section level3">
+<h3>Conclusion</h3>
+</div>
+</div>

@@ -1,14 +1,13 @@
 ---
-title: Let's Talk About the Weather - Analyzing Berlin’s Changing Climate.
+title: How About That Weather!? - An EDA of Climate Change in Berlin.
 author: Gershom Tripp
-date: '2018-09-16'
-slug: let-s-talk-about-the-weather-analyzing-berlin-s-changing-climate
+date: '2018-09-17'
+slug: how-about-that-weather-an-eda-of-climate-change-in-berlin
 categories:
   - R
-  - tidyverse
 tags:
-  - climate
   - Berlin
+  - climate
 ---
 
 
@@ -20,9 +19,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-### Introduction
 
-What follows is an [EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis) inspired by conversations I've had about Berlin's changing weather, something I've personally witnessed in the 11+ years that I've lived here. Part of my motivation also stems from a running argument obout the direction of that change: My wife thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she's imagining things. In the end we might both have to modify our positions a bit. 😘😘😘
+
+
+
+
+## Introduction
+
+What follows is an [EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis) inspired by conversations I've had about Berlin's changing climate, something I've personally witnessed in the 11+ years that I've lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she's imagining things. In the end we might both have to modify our positions a bit.
 
 Beyond mere curosity and [Besserwisserei](https://www.dict.cc/deutsch-englisch/Besserwisser.html), I think it's important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening [now](https://climate.nasa.gov/effects/), and there's some evidence that it's accelerating even [faster than predicted](https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record). 
 
@@ -30,7 +34,16 @@ For the record, I'm neither a climatoligist nor a meteorologist, and nothing abo
 
 The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing, [skip to the analysis](#analysis).
 
-### Massaging the data
+
+
+
+
+***
+
+
+
+
+## Data Import and Preparation
 
 First off, the libraries:
 
@@ -105,10 +118,6 @@ tempelhof_params %>%
     filter(!duplicated(Parameter) & !is.na(Parameter)) %>% 
     knitr::kable()
 ```
-
-
-
-
 
 
 
@@ -204,7 +213,8 @@ berlin_data$Month <- factor(berlin_data$Month,
 
 
 
-### <a name="analysis"></a>Visualizing Berlin's changing climate
+
+## <a name="analysis"></a>Visualizing Berlin's changing climate
 
 I now have a few hundred thousand observations for each of four Berlin weather stations, which I can freely group based on my analytical needs. The following table shows the total observations (daily averages) for each of Berlin's four weather stations.
 
@@ -276,7 +286,8 @@ berlin_data %>%
            ) %>% 
     group_by(Year) %>% 
     summarize("number of obs." = n(),
-              "annual avg. temp." = mean(Value))
+              "annual avg. temp." = mean(Value)) %>% 
+    knitr::kable()
 ```
 
 The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I that wouldn't affect the overall trends at all, so I'll just drop 1945 instead and save myself some time. I'll also aggregate the station data to make later visualizations a little easier.
@@ -353,7 +364,7 @@ filter_group <- function(df){
     
 gg_geoms_x_scale <- function(df){
     df %>% ggplot(aes(x = Year, y = Value, color = Month)) +
-        geom_line(alpha = .3) +
+        geom_line(alpha = .25) +
         geom_smooth(method = "loess", span = 0.5, se = F) +
         scale_x_continuous(limits = c(1957, 2017),
                            breaks = seq(1957, 2017, by = 10)
@@ -361,6 +372,7 @@ gg_geoms_x_scale <- function(df){
     }
 ```
 
+Predictably, the proportion of summer days with a maximum temperature above 25°C has gone up since 1957, in some cases dramatically. In August, for instance, the number has nearly doubled, equating to about a week more of warm days. July has seen a similar increase, and even May and September have seen the number of +25°C days go up. June seems to be a bit of an outlier as the number has remained relatively stable, although there has been some fluctuation.
 
 ```{r temperatures greater that 25C}
 berlin_data %>% 
@@ -375,7 +387,10 @@ berlin_data %>%
          y = "Proportion"
          )
 ```
-The spike in July corresponds with the [2006 European heat wave](https://en.wikipedia.org/wiki/2006_European_heat_wave).
+
+The average number of hours of daily sunshine appears to have remained fairly stable at least since 1977. There is some fluctuation, but there is no clear trend in any direction. I take this to mean that these months have not become significantly more overcast (or, conversely, sunnier).
+
+There is, however, a clear downward trend for the months September and June from 1957 to about 1985. These two months appear to have lost about two hours each. I have no idea how that translates to daily cloud cover, but it's clear that June and September were once sunnier than they are today.
 
 ```{r avg. daily sunshine by month}
 berlin_data %>% 
@@ -391,6 +406,8 @@ berlin_data %>%
          y= "Duration (h)"
          )
 ```
+
+
 
 ```{r avg. daily precipitation by month}
 berlin_data %>% 
@@ -420,3 +437,52 @@ berlin_data %>%
          )
 ```
 
+The last plot displays the number of days per month where there is at least a -5 hPa drop in air pressure compared to the previous day. Although this measure is obviously not perfect, my layperson intuition tells me that an increase in the number of such drops might hint at an increase in storm fronts of a certain intensity. Feel free to let me know in the comments if this is a terribly misled idea.
+
+The choice of a -5 hPa drop is not completely arbitrary.  [](http://www.bohlken.net/airpressure2.htm)
+
+```{r correlogram of selected values, fig.width=7, fig.height=7}
+berdat_sub <- berlin_data %>%
+    filter(Month %in% c("May", "June", "July", "August", "September"),
+           Year > 1956) %>%
+    spread(Variable, Value) %>% 
+    select(7:17, -`Snow (cm)`, -`Avg. Cloud Cover (8th)`)
+
+names(berdat_sub) <- c("PRESS", "HUMID", "TEMP_AVG", "WIND_AVG", "TEMP_MAX",
+                       "WIND_MAX", "TEMP_MIN", "PRECIP", "SUN")
+
+berdat_cortest <- psych::corr.test(x = berdat_sub, method = "spearman")
+
+corrplot::corrplot(berdat_cortest$r,
+                   p.mat = berdat_cortest$p,
+                   sig.level = .001,
+                   type = "upper",
+                   method = "number",
+                   order = "AOE",
+                   tl.cex = .8,
+                   title = "Correlogram (rho) of Selected Variables",
+                   mar = c(0, 0, 2, 0)
+                   )
+```
+
+
+```{r drop in air pressure greater than -5}
+berlin_data %>% 
+    filter(Variable == "Avg. Air Pressure (hPa)") %>% 
+    filter_group() %>% 
+    mutate(Value = (lag(Value) - Value)) %>% 
+    filter(!is.na(Value), Value < -5) %>%
+    group_by(Year, Month) %>% 
+    summarize(Value = n()) %>% 
+    gg_geoms_x_scale() + 
+    scale_y_continuous(limits = c(1, 9),
+                       breaks = seq(1, 9, by = 1)
+                       ) +
+    thm + 
+    labs(title = "Drop in Air Pressure (hPa) from Previous Day > 5",
+         y= "Number of Days"
+         )    
+```
+
+
+### Conclusion

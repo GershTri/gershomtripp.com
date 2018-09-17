@@ -2,21 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Gershom Tripp</title>
-    <link>http://www.gershomtripp.com/</link>
+    <link>/</link>
     <description>Recent content on Gershom Tripp</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Sat, 22 Aug 2015 06:28:26 -0700</lastBuildDate>
+    <lastBuildDate>Mon, 17 Sep 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="http://www.gershomtripp.com/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
+      <title>How About That Weather!? - An EDA of Climate Change in Berlin.</title>
+      <link>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</link>
+      <pubDate>Mon, 17 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</guid>
+      <description>Introduction What follows is an EDA inspired by conversations I’ve had about Berlin’s changing climate, something I’ve personally witnessed in the 11+ years that I’ve lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she’s imagining things. In the end we might both have to modify our positions a bit.</description>
+    </item>
+    
+    <item>
       <title>colophon</title>
-      <link>http://www.gershomtripp.com/about/colophon/</link>
+      <link>/about/colophon/</link>
       <pubDate>Sat, 22 Aug 2015 06:28:26 -0700</pubDate>
       
-      <guid>http://www.gershomtripp.com/about/colophon/</guid>
+      <guid>/about/colophon/</guid>
       <description>This website is my personal hompage and blogfolio. I put mostly data-science-related content here, because that&amp;rsquo;s my passion, but sometimes I also write about other things.
 Because this is a blog cum portfolio you will often find prose interspersed with code. This is known as literate programming, and I hope it encourages readers/data scientists to learn from, teach, and otherwise interact with me.
 The site is built with Hugo—a static site generator made with Go.</description>
