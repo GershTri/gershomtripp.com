@@ -39,3 +39,7 @@ section.main .content .markdown h3 {
   font-size: 1rem;
   margin-bottom: 1rem;
 }
+section.main .content .markdown hr {
+  border-top: 3px double #8c8b8b;
+  margin: 4rem 0 3.5rem 0;
+}
