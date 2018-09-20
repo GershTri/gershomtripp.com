@@ -8,6 +8,7 @@ categories:
 tags:
   - Berlin
   - climate
+  - EDA
 ---
 
 
@@ -26,11 +27,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-What follows is an [EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis) inspired by conversations I've had about Berlin's changing climate, something I've personally witnessed in the 11+ years that I've lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she's imagining things. In the end we might both have to modify our positions a bit.
+What follows is an [EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis) inspired by conversations I've had about Berlin's changing climate, something I've personally witnessed in the 11+ years that I've lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife, for example. thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she might be imagining things. In the end we might both have to modify our positions a bit.
 
 Beyond mere curosity and [Besserwisserei](https://www.dict.cc/deutsch-englisch/Besserwisser.html), I think it's important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening [now](https://climate.nasa.gov/effects/), and there's some evidence that it's accelerating even [faster than predicted](https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record). 
 
-For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I'll also avoid making any inferences based on the data. That having been said, given the quality of the data I should still be able draw some conclusions.
+For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I'll also avoid making too many inferences based on the data, limiting myself instead to exploration. That having been said, I should still be able draw some conclusions, however tentative.
 
 The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing, [skip to the analysis](#analysis).
 
@@ -224,7 +225,7 @@ berlin_data %>%
     knitr::kable()
 ```
 
-Let's first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of yearly variation.
+Let's first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of year-by-year variation.
  
 ```{r viz mean yearly temps, message=FALSE}
 # create variable to hold theme (reusable)
@@ -233,6 +234,7 @@ thm <- theme_minimal() +
           panel.grid.major.x = element_blank()
           )
 
+# generate combined timeseries of temperatur data
 berlin_data %>% 
     filter(Variable == "Avg. Temp. (°C)") %>%
     group_by(Station, Year) %>% 
@@ -252,7 +254,7 @@ berlin_data %>%
                        )
 ```
 
-Also conspicuous is the precipitous drop in 1945. Histograms of each year from 1941-1949 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, however - that is to say, some data is missing - and the data that is available clusters around the low end.
+Also conspicuous is the precipitous drop in 1945. Histograms of each year from 1941-1949 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, that is to say, some data is missing, and the data that is available clusters around the low end.
 
 ```{r viz distribution of temps 1941-1949}
 berlin_data %>% 
@@ -274,7 +276,7 @@ berlin_data %>%
          )
 ```
 
-A table observation counts (i.e. number of daily averages) confirms this.
+A table observation counts (i.e. number of daily averages) confirms that 1945 is missing data.
 
 ```{r}
 berlin_data %>% 
@@ -289,7 +291,7 @@ berlin_data %>%
     knitr::kable()
 ```
 
-The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I that wouldn't affect the overall trends at all, so I'll just drop 1945 instead and save myself some time. I'll also aggregate the station data to make later visualizations a little easier.
+The [Battle of Berlin](https://en.wikipedia.org/wiki/Battle_of_Berlin) was in the spring of 1945, so there's really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I'll save myself some time and just drop 1945 instead, which shouldn't have any effect on the overall trend. I'll also aggregate the station data to make later visualizations a little easier.
 
 ```{r drop 1945}
 berlin_data <- berlin_data <- filter(berlin_data, Year != 1945) %>% 
@@ -343,102 +345,149 @@ berlin_data %>%
                        ) +
     scale_y_continuous(limits = c(-1, 2),
                        breaks = seq(-1, 2, .5)) +
+    scale_color_manual(values = c("red", "blue")) +
     labs(color = "",
          title = "Temp. Change in °C (LOESS), World vs. Berlin, 1877-2017",
          y = "Change (°C)"
          )
 ```
 
-The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperatures have increased by about 2°C since 1925, compared to a 1°C globally.
+The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperature has increased by about 2°C since 1925, compared to 1°C globally.
 
-The final four plots 
+
+
+
+
+### Proportion of +25°C Days
+
+Next, I would like to see how the increase in average annual temperature has affected the high end of the overall distribution of annual temperatures. The following bit of code stores just some useful, reusable settings.
 
 ```{r}
 filter_group <- function(df){
-    df %>% filter(Month %in% c("May", "June", "July", "August", "September"),
-                  Year > 1956
-                  ) %>%
+    df %>% filter(Year %in% (1957:2017)) %>%
     group_by(Year, Month)
     }
     
 gg_geoms_x_scale <- function(df){
     df %>% ggplot(aes(x = Year, y = Value, color = Month)) +
         geom_line(alpha = .25) +
-        geom_smooth(method = "loess", span = 0.5, se = F) +
+        geom_smooth(method = "loess", se = F) +
         scale_x_continuous(limits = c(1957, 2017),
                            breaks = seq(1957, 2017, by = 10)
-                           )
-    }
+                           ) +
+        facet_wrap(~ Month)
+}
+
+thm <- thm + 
+    theme(legend.position = "none",
+          panel.spacing = unit(1, "lines")
+          )
 ```
 
-Predictably, the proportion of summer days with a maximum temperature above 25°C has gone up since 1957, in some cases dramatically. In August, for instance, the number has nearly doubled, equating to about a week more of warm days. July has seen a similar increase, and even May and September have seen the number of +25°C days go up. June seems to be a bit of an outlier as the number +25° days has remained relatively stable, although there has been some fluctuation.
+Now to plot the *proportion* of days per month, for the months May-September, where maximum temperatures exceed 25°C. I've excluded months where temperatures almost never reach 25°.
 
 ```{r temperatures greater that 25C}
 berlin_data %>% 
-    filter(Variable == "Max Temp. (°C)") %>%
+    filter(Variable == "Max Temp. (°C)",
+           Month %in% c("May", "June", "July", "August", "September")
+           ) %>%
     filter_group() %>% 
     summarise(Value = sum(Value > 25)/n()) %>% 
     gg_geoms_x_scale() +
     scale_y_continuous(limits = c(0, 1),
-                       breaks = seq(0, 1, by = .1)) +
-    thm + 
+                       breaks = seq(0, 1, by = .1)
+                       ) +
+    thm +
     labs(title = "Proportion of Days with Temp. > 25°C, 1957-2017",
          y = "Proportion"
          )
 ```
 
-The average number of hours of daily sunshine appears to have remained fairly stable at least since 1977. There is some fluctuation, but there is no clear trend in any direction. I take this to mean that these months have not become significantly more overcast (or, conversely, sunnier), at least not over the long term.
+Predictably, the proportion of summer days with maximum temperatures above 25°C has gone up since 1957. It is, nevertheless, interesting to see the variation over the years, as well as across the months. For July and August, for instance, the number has nearly doubled, equating to about a week more of very warm days. These two months also show somewhat more yearly variation compared to the others. June has, oddly, remained fairly stable.
 
-```{r avg. daily sunshine by month}
+
+
+
+
+### Sunshine
+
+Looking at the next plot, the average number of hours of daily sunshine appears to have remained fairly stable at least since 1977. There is some fluctuation, but there is no clear trend in any direction. I take this to mean that these months have not become significantly more overcast (or, conversely, sunnier) - at least, not over the long term.
+
+```{r avg. daily sunshine by month, fig.height=10, fig.width=10}
 berlin_data %>% 
     filter(Variable == "Sun Shine Duration (h)") %>%
     filter_group() %>% 
     summarize(Value = mean(Value)) %>% 
     gg_geoms_x_scale() +
-    scale_y_continuous(limits = c(2.4, 12.5),
-                       breaks = seq(2.5, 12.5, by = 1)
+    scale_y_continuous(limits = c(0, 12.5),
+                       breaks = seq(0, 12, by = 1)
                        ) +
+    facet_wrap(~ Month) +
     thm +
     labs(title = "Avg. Daily Sunshine (Hours), 1957-2017",
          y= "Duration (h)"
          )
 ```
 
-The average amount of daily precipitation also doesn't show any general upward trend since 1957. At shorter timescales, e.g. from about 2000 to 2017, there is a clear upturn in the months of June and July and a downturn in May, August and September. Part of June and July's increase can be explained by 2017, which was a historically wet year. That being said, the uptick remains even when 2017 is removed from the dataset.
 
-```{r avg. daily precipitation by month}
+
+
+
+
+### Precipitation
+
+For the most part the average amount of precipitation also doesn't show any general upward trend since 1957. At shorter timescales, however, and for individual months, there are discernible trends. June and July - and to a lesser degree, October - show a clear increase in the amound of precipitation. 
+
+```{r avg. daily precipitation by month, fig.height=10, fig.width=10}
 berlin_data %>% 
     filter(Variable == "Precipitation (mm)") %>%
     filter_group() %>% 
     summarize(Value = mean(Value)) %>% 
     gg_geoms_x_scale() + 
-    scale_y_continuous(limits = c(-0.5, 7.5),
-                       breaks = seq(0, 7.5, by = 1)) +
+    scale_y_continuous(limits = c(0, 8),
+                       breaks = seq(0, 8, by = 1)) +
+    facet_wrap(~ Month) +
     thm + 
     labs(title = "Avg. Daily Precipitation (mm), 1957-2017",
          y= "Amount (mm)"
          )
 ```
 
-Notwithstanding the increase in the average amount of daily precipitation, the proportion of "wet" to "dry" days has remained relatively stable, hovering around 50% for every month since 1957. Taken together, an increase in average daily precipitation, stable proportion of wet to dry days, and fairly stable amount of daily sunshine, seem to imply that storms have become more intense without becoming more frequent.
 
-```{r proportion days without precipitation by month}
+
+
+
+
+
+### Days Without Precipitation
+
+The proportion of "wet" to "dry" days has remained relatively stable over the long term, hovering around 50% for every month since 1957. There are some discernible trends over shorter timescales of 10-20 years: upwards in the late winter and early spring (i.e. more "dry" days), and downwards for the winter months, as well as for July (i.e. more "wet" days).
+
+```{r proportion days without precipitation by month, fig.height=10, fig.width=10}
 berlin_data %>% 
     filter(Variable == "Precipitation (mm)") %>%
     filter_group() %>% 
     summarize(Value = sum(Value == 0)/n()) %>% 
     gg_geoms_x_scale() + 
-    scale_y_continuous(limits = c(0.1, .95),
-                       breaks = seq(0.1, .9, by = .1)) +
-    thm + 
-    labs(title = "Days Without Precipitation (Proportion), 1957-2017",
+    scale_y_continuous(limits = c(0, 1),
+                       breaks = seq(0, 1, by = .1)) +
+    thm +
+    labs(title = "Days Without Precipitation as Proportion of all Days, 1957-2017",
          y= "Proportion"
          )
 ```
 
-My lay intuition tells me that air pressure could be a further indicator of storm intensity. As I understand it, stable high pressure zones usually indicate good weather while rapidly decreasing air pressure indicates an impending storm. Hourly data are necessary to properly analyze the association between air pressure and bad weather, something I decided against for the this analysis for time reasons. Still, I assume strong storms would leave some trace by driving down daily averages. 
 
-To see if air pressure, measured in hectopascals (hPa), is a good indicator of weather conditions, I'll plot the correlations of some relevant variables in a correlogram. I should note that this probably isn't the best method to determine how pressure affects weather. It's more of a heuristic to help me determine if there is a question here worth answering. Finer-grained air pressure data and variables more closely associated with bad weather, cloud type for instance, in addition to more rigorous statistical methods would allow me to more confidently draw conclusions.
+
+
+
+
+
+### Air Pressure
+
+Given what I know about the dynamic between air pressure and weather - which is admittedly not that much - I think air pressure could be a further indicator of storm intensity. As I understand it, stable high pressure zones usually indicate good weather while rapidly decreasing air pressure indicates an impending storm. Hourly data are necessary to properly analyze the association between air pressure and bad weather, something I decided against for the this analysis for time reasons. Still, I assume strong storms would leave some trace by driving down daily averages. 
+
+To see if air pressure, measured in hectopascals (hPa), is a good indicator of weather conditions, I'll plot the correlations of some relevant variables in a correlogram. I should note that this probably isn't the best method to determine how air pressure affects weather. It's more of a heuristic to help me determine if there is a question here worth answering. Finer-grained air pressure data and variables more closely associated with bad weather, cloud type for instance, in addition to more rigorous statistical methods would allow me to more confidently draw conclusions. But that's a project for another day.
 
 First I need to compute a correlation matrix, which requires some transformation. This code *widens* the data by giving each variable it's own column (basically the reverse of the above *tidying* process), and then computes the correlations (Spearman's $\rho$ in this case).
 
@@ -466,23 +515,26 @@ corrplot(berdat_cortest$r,
          order = "AOE",
          tl.cex = .8,
          title = "Correlogram (rho) of Selected Variables",
-         mar = c(0, 0, 2, 0)
+         mar = c(0, 0, 2, 0),
+         col = colorRampPalette(c("red", "white", "blue"))(100)
          )
 ```
 
 
-Of particular interest are correlations between `PRESS` and the other variables that also make intuitive sense, as that would imply that air pressure is a good predictor of weather conditions. We should expect, for example, that high pressure is positively correlated with fair weather, as given by `SUN`, and negatively correlated with wind and bad weather, as given by `WIND_MAX`, `WIND_AVG`, and `PRECIP`. Looking at the plot, this seems to be the case, so I can accept that air pressure can tell me something about weather conditions - with the above proviso
+Of particular interest are correlations between `PRESS` and the other variables that also make intuitive sense, as that would imply that air pressure is a good predictor of weather conditions. We should expect, for example, that high pressure is positively correlated with fair weather, as given by `SUN`, and negatively correlated with wind and bad weather, as given by `WIND_MAX`, `WIND_AVG`, and `PRECIP`. Looking at the plot, this seems to be the case, so I'll accept, with the above proviso, that a day's average air pressure can tell me something about the weather conditions for that day.
 
-The final plot displays the number of days per month where there is at least a -3 hPa drop in air pressure compared to the previous day. Although this measure is obviously not perfect, my layperson intuition tells me that an increase in the number of such drops might hint at an increase in storm fronts of a certain intensity. Feel free to let me know in the comments if this is a terribly misled idea.
+The final plot displays the number of days per month where there is at least a -3 hPa *drop* in air pressure compared to the previous day. Although this measure is obviously not perfect, my layperson intuition tells me that an increase in the number of such drops might hint at an increase in storm fronts of a certain intensity.
 
 The choice of a -3 hPa drop is not completely arbitrary. A convenient table on [bohlken.net](http://www.bohlken.net/airpressure2.htm) (a barograph maker) states that a drop of -3 hPa can lead to strong winds of 6-7 Bfts (11-17 m/s), so it seems like a decent place to start.
 
-The final plot contains the number of days per month with a difference of at least -3 hPa compared to the previous day. There are at least two major problems here: First, the table on bohlken.net relates wind speed increases to a drop in air pressure over a 1-3 hour timeframe, while the data I'm using contains 24-hour means. Second, there is an implicit assumption that bad weather days and good weather days are more or less evenly dispersed, as there wouldn't otherwise be any difference between consecutive days of the same type. This is very likely *not* the case.
+The final plot contains the number of days per month with a difference of at least -3 hPa compared to the previous day. There are at least two major problems here: First, the table on bohlken.net relates wind speed increases to a drop in air pressure over a 1-3 hour timeframe, while the data I'm using contains 24-hour means. Second, there is an implicit assumption that bad weather days and good weather days are more or less evenly dispersed, as there wouldn't otherwise be any difference between consecutive days of the same type. This is very likely not the case.
 
 Still, I'm fairly confident that larger, more extreme storm fronts would leave a trace on daily hPa averages, and that an increase in the amount or intensity of these fluctuations is measurable. I also think that severe weather is still infrequent enough in Berlin that an increasing number of large drops should show up in monthly aggregates.
 
+The plot below seems to confirm my intuitions. Especially the months May-August show strong upward trends over the last 10-15 years, which one might interpret as an increase in the number of storms of a certain magnitude. This is also consistent with my understanding of how temperature, air pressure, and storm systems relate: The warmer the air, the more water vapor it contains, and the more intense the resulting storms.
 
-```{r drop in air pressure greater than -3}
+
+```{r drop in air pressure greater than -3, fig.height=10, fig.width=10}
 berlin_data %>% 
     filter(Variable == "Avg. Air Pressure (hPa)") %>% 
     filter_group() %>% 
@@ -491,14 +543,37 @@ berlin_data %>%
     group_by(Year, Month) %>%
     summarize(Value = n()) %>%
     gg_geoms_x_scale() + 
-    scale_y_continuous(limits = c(2, 13),
-                       breaks = seq(2, 13, by = 1)
+    facet_wrap(~ Month) +
+    scale_y_continuous(limits = c(2, 15),
+                       breaks = seq(2, 15, by = 1)
                        ) +
     thm + 
-    labs(title = "Drop in Air Pressure (hPa) from Previous Day > 5",
+    labs(title = "Drop in Air Pressure (hPa) from Previous Day > 3",
          y= "Number of Days"
-         )    
+         )
 ```
 
 
-### Conclusion
+
+
+
+
+
+
+
+## Conclusion
+
+If there is one conclusion that I can confidently draw from the above analysis, it is that Berlin is getting warmer at a rate on par with global average. It is also [well known](https://earthobservatory.nasa.gov/Features/ClimateStorms/page2.php) that temperature has an effect on weather systems generally, and storm intensity specifically. In an attempt to find some evidence of such a development in Berlin I analysed temperature, including the number of days per month with highs over 25°C, the average amount of monthly precipitation, the proportion of "dry" to "wet" days, and air pressure shifts as in indication of increasing storm intensity and frequency.
+
+Taken together, these variables *suggest* that Berlin is experiencing a 10 to 20 year trend of more extreme weather: Hotter summers punctuated by more intense summer storms. I've deduced this from the following:
+
+* Average precipitation has increased without a corresponding increase in the proportion of days with precipitation to those without.
+* Daily averages of sunshine duration have, much like the the number of rainless days, remained fairly stable.
+* There is a consistent increase in the number of monthly drops in air pressure of a magnitude greater than 3 hPa.
+
+None
+
+
+
+
+
