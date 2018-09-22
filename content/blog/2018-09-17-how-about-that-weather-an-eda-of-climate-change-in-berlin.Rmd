@@ -9,6 +9,9 @@ tags:
   - Berlin
   - climate
   - EDA
+output:
+  blogdown::html_page:
+    toc: true
 ---
 
 
@@ -31,9 +34,9 @@ What follows is an [EDA](https://en.wikipedia.org/wiki/Exploratory_data_analysis
 
 Beyond mere curosity and [Besserwisserei](https://www.dict.cc/deutsch-englisch/Besserwisser.html), I think it's important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening [now](https://climate.nasa.gov/effects/), and there's some evidence that it's accelerating even [faster than predicted](https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record). 
 
-For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I'll also avoid making too many inferences based on the data, limiting myself instead to exploration. That having been said, I should still be able draw some conclusions, however tentative.
+For the record, I'm neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I'll avoid making too many inferences based on the data, focussing instead on exploration. That having been said, I should still be able draw some conclusions, however tentative.
 
-The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing, [skip to the analysis](#analysis).
+The next couple of sections cover how I wrangle the data into a more manageable form. If you're not interested in that kind of thing just [skip to the analysis](#visualizing-climate-change-in-berlin).
 
 
 
@@ -192,7 +195,11 @@ berlin_data <- berlin_data %>%
 # turn seasons into factors
 berlin_data$Season <- factor(berlin_data$Season,
                              ordered = T,
-                             levels = c("Spring", "Summer", "Winter", "Fall")
+                             levels = c("Spring", "Summer", "Fall", "Winter")
+                             )
+berlin_data$Station <- factor(berlin_data$Station,
+                             ordered = T,
+                             levels = c("Dahlem (LFAG)", "Dahlem (FU)", "Tempelhof", "Tegel")
                              )
 
 # turn months into factors
@@ -214,7 +221,7 @@ berlin_data$Month <- factor(berlin_data$Month,
 
 
 
-## <a name="analysis"></a>Visualizing Climate Change in Berlin
+## Visualizing Climate Change in Berlin
 
 I now have a few hundred thousand observations for each of four Berlin weather stations, which I can freely group based on my analytical needs. The following table shows the total observations (daily averages) for each of Berlin's four weather stations.
 
@@ -225,7 +232,7 @@ berlin_data %>%
     knitr::kable()
 ```
 
-Let's first take a look at how average yearly temperatures have changed since 1876. The following time series shows that average yearly temperatures in Berlin have increased by about 2°C since the middle of the 20th century, although there is a fair amount of year-by-year variation.
+Let's first take a look at how average annual temperatures have changed since 1876. The following time series shows how temperatures in Berlin have increased by about 2°C, with the rate of warming accelerating from about the middle of the last century. There is some variation, but the general trend is unmistakable. 
  
 ```{r viz mean yearly temps, message=FALSE}
 # create variable to hold theme (reusable)
@@ -241,7 +248,8 @@ berlin_data %>%
     summarise(Value = mean(Value, na.rm = T)) %>%
     ggplot(aes(x = Year, y = Value)) +  
     geom_line(aes(color = Station)) +
-    geom_smooth(se = F, method = "loess", span = .2) +
+    scale_color_manual(values = c("#000000", "#000090", "#4848ED", "#8888FF")) +
+    geom_smooth(se = F, method = "loess", span = .2, color = "#FF0000") +
     labs(title = "Avg. Yearly Temperature (°C), 1876-2017",
          y = "Temp."
          ) +
@@ -310,7 +318,7 @@ nasa_data <- read_tsv("https://climate.nasa.gov/system/internal_resources/detail
 ```
 
 
-I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in mean global temperatures compared to Berlin. Note that the y-axis displays average annual temperature *change* in °C, and *not* average annual temperature. What I call change NASA calls **annual average anomaly**, which is the "change in global surface temperature relative to 1951-1980 average temperatures". To maintain consistency with NASA's data I'll also transform the Berlin data to represent the change from the 1951-1980 average. Also note that I plot Loess curves with `span = 0.2` to cut out some of the noise.
+I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in global mean temperatures compared to Berlin. Note that the y-axis displays average annual temperature *change* in °C, and *not* average annual temperature. What I call change NASA calls **annual average anomaly**, which is the "change in global surface temperature relative to 1951-1980 average temperatures". To maintain consistency with NASA's data I'll also transform the Berlin data to also represent the change from the 1951-1980 average. Also note that I plot Loess curves with `span = 0.2` to cut out some of the noise.
 
 ```{r viz global and local temp change}
 berlin_data %>%
@@ -347,12 +355,12 @@ berlin_data %>%
                        breaks = seq(-1, 2, .5)) +
     scale_color_manual(values = c("red", "blue")) +
     labs(color = "",
-         title = "Temp. Change in °C (LOESS), World vs. Berlin, 1877-2017",
+         title = "Annual Avg. Anomaly (LOESS), World vs. Berlin, 1877-2017",
          y = "Change (°C)"
          )
 ```
 
-The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperature has increased by about 2°C since 1925, compared to 1°C globally.
+The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperature has increased by about 2°C since 1925, compared to 1°C globally. This is likely due to the [urban heat island effect](https://en.wikipedia.org/wiki/Urban_heat_island), and would be worth exploring in future analyses.
 
 
 
@@ -360,18 +368,19 @@ The upward trend in mean annual temperatures in Berlin broadly parallels that of
 
 ### Proportion of +25°C Days
 
-Next, I would like to see how the increase in average annual temperature has affected the high end of the overall distribution of annual temperatures. The following bit of code stores just some useful, reusable settings.
+Next, I would like to see how the increase in average annual temperatures has affected the high end of the overall distribution of annual temperatures. The following bit of code just stores some useful, reusable settings.
 
 ```{r}
 filter_group <- function(df){
     df %>% filter(Year %in% (1957:2017)) %>%
-    group_by(Year, Month)
+    group_by(Year, Season, Month)
     }
     
 gg_geoms_x_scale <- function(df){
-    df %>% ggplot(aes(x = Year, y = Value, color = Month)) +
-        geom_line(alpha = .25) +
+    df %>% ggplot(aes(x = Year, y = Value, color = Season)) +
+        geom_line(alpha = .5) +
         geom_smooth(method = "loess", se = F) +
+        scale_color_manual(values = c("#FF9F9F", "#E50000", "#7777FF", "#0000C4")) +
         scale_x_continuous(limits = c(1957, 2017),
                            breaks = seq(1957, 2017, by = 10)
                            ) +
@@ -379,22 +388,19 @@ gg_geoms_x_scale <- function(df){
 }
 
 thm <- thm + 
-    theme(legend.position = "none",
-          panel.spacing = unit(1, "lines")
-          )
+    theme(panel.spacing = unit(1, "lines"))
 ```
 
-Now to plot the *proportion* of days per month, for the months May-September, where maximum temperatures exceed 25°C. I've excluded months where temperatures almost never reach 25°.
+Now to plot the *proportion* of days per month, for the months May-September, where maximum temperatures exceed 25°C. The colors correspond to [meteorological season](https://en.wikipedia.org/wiki/Season#Meteorological), with spring and summer being shades of red, and fall and winter shades of blue.
 
-```{r temperatures greater that 25C}
+```{r temperatures greater that 25C, fig.height=10, fig.width=10}
 berlin_data %>% 
-    filter(Variable == "Max Temp. (°C)",
-           Month %in% c("May", "June", "July", "August", "September")
+    filter(Variable == "Max Temp. (°C)"
            ) %>%
     filter_group() %>% 
     summarise(Value = sum(Value > 25)/n()) %>% 
     gg_geoms_x_scale() +
-    scale_y_continuous(limits = c(0, 1),
+    scale_y_continuous(limits = c(-0.5, 1),
                        breaks = seq(0, 1, by = .1)
                        ) +
     thm +
@@ -403,7 +409,7 @@ berlin_data %>%
          )
 ```
 
-Predictably, the proportion of summer days with maximum temperatures above 25°C has gone up since 1957. It is, nevertheless, interesting to see the variation over the years, as well as across the months. For July and August, for instance, the number has nearly doubled, equating to about a week more of very warm days. These two months also show somewhat more yearly variation compared to the others. June has, oddly, remained fairly stable.
+Predictably, the proportion of days with maximum temperatures above 25°C has gone up since 1957, particularly in July and August, but also in May and September. The summer months show a great deal of variation. Also interesting is the fact that June has remained fairly stable even as other months show dramatic increases. This could provide one explanation, via a sort of [contrast effect](https://en.wikipedia.org/wiki/Contrast_effect), for the perception that June's weather is getting worse, although I'm not so sure this 
 
 
 
@@ -461,7 +467,7 @@ berlin_data %>%
 
 ### Days Without Precipitation
 
-The proportion of "wet" to "dry" days has remained relatively stable over the long term, hovering around 50% for every month since 1957. There are some discernible trends over shorter timescales of 10-20 years: upwards in the late winter and early spring (i.e. more "dry" days), and downwards for the winter months, as well as for July (i.e. more "wet" days).
+Changes in the proportion of "wet" to "dry" days since 1957 depend on the timescale used, as well as the month being analyzed. 
 
 ```{r proportion days without precipitation by month, fig.height=10, fig.width=10}
 berlin_data %>% 
@@ -540,7 +546,7 @@ berlin_data %>%
     filter_group() %>% 
     mutate(Value = (Value - lag(Value))) %>%
     filter(!is.na(Value), Value < -3) %>%
-    group_by(Year, Month) %>%
+    group_by(Year, Season, Month) %>%
     summarize(Value = n()) %>%
     gg_geoms_x_scale() + 
     facet_wrap(~ Month) +
