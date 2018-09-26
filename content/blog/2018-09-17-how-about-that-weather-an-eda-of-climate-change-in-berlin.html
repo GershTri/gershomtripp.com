@@ -19,9 +19,13 @@ output:
 <ul>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#data-import-and-preparation">Data Import and Preparation</a><ul>
-<li><a href="#tidying-the-data">Tidying the Data</a></li>
+<li><a href="#importing">Importing</a></li>
+<li><a href="#tidying">Tidying</a></li>
 </ul></li>
 <li><a href="#visualizing-climate-change-in-berlin">Visualizing Climate Change in Berlin</a><ul>
+<li><a href="#average-annual-temperature-change-berlin">Average Annual Temperature Change: Berlin</a></li>
+<li><a href="#average-annual-temperature-global-vs.local">Average Annual Temperature: Global vs. Local</a></li>
+<li><a href="#section"></a></li>
 <li><a href="#proportion-of-25c-days">Proportion of +25°C Days</a></li>
 <li><a href="#sunshine">Sunshine</a></li>
 <li><a href="#precipitation">Precipitation</a></li>
@@ -34,10 +38,13 @@ output:
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>What follows is an <a href="https://en.wikipedia.org/wiki/Exploratory_data_analysis">EDA</a> inspired by conversations I’ve had about Berlin’s changing climate, something I’ve personally witnessed in the 11+ years that I’ve lived here. Part of my motivation also stems from a running disagreement obout the direction of that change: My wife, for example. thinks June is a sorry excuse for a summer month, and that it used to be nicer, and I think she might be imagining things. In the end we might both have to modify our positions a bit.</p>
-<p>Beyond mere curosity and <a href="https://www.dict.cc/deutsch-englisch/Besserwisser.html">Besserwisserei</a>, I think it’s important to explore how global warming and climate change manifest themselves at the local level. Climate change is happening <a href="https://climate.nasa.gov/effects/">now</a>, and there’s some evidence that it’s accelerating even <a href="https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record">faster than predicted</a>.</p>
-<p>For the record, I’m neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or original. I’ll avoid making too many inferences based on the data, focussing instead on exploration. That having been said, I should still be able draw some conclusions, however tentative.</p>
-<p>The next couple of sections cover how I wrangle the data into a more manageable form. If you’re not interested in that kind of thing just <a href="#visualizing-climate-change-in-berlin">skip to the analysis</a>.</p>
+<p>The following exploratory data analysis of climate change in Berlin represents a first step in bringing this often abstract issue closer to home. Why is this necessary? Per Espen Stoknes writes the following about the role of psychological “distance” when it comes to inaction in the face of climate change in his book <a href="https://www.amazon.de/What-Think-About-Global-Warming/dp/1603585834"><em>What We Think About When We Try Not to Think About Global Warming</em></a>:</p>
+<blockquote>
+<p>The climate issue remains remote for the majority of us, in a number of ways. We can’t see climate change. Melting glaciers are usually far away, as are the spots on earth now experiencing sea level rise, more severe floods, droughts, fires, and other climate disruptions. It may hit foreign others, not me or my kin. And the heaviest impacts are far off in time—in the coming century or farther. Despite some people stating that global warming is here now, it still feels distant from everyday concerns.</p>
+</blockquote>
+<p>There is little doubt that climate change is happening <a href="https://climate.nasa.gov/effects/">now</a>, and there’s some evidence that it’s accelerating even <a href="https://www.theguardian.com/world/2018/aug/21/arctics-strongest-sea-ice-breaks-up-for-first-time-on-record">faster than predicted</a>. I am fairly certain that I have witnessed climate change in action in the 11+ years that I have lived in Berlin</p>
+<p>For the record, I’m neither a climatoligist nor a meteorologist, and nothing about my analysis is going to be cutting edge or terribly original. I’ll avoid making too many inferences based on the data, focussing instead on <em>exploration</em> using fairly basic statistical methods. That being said, I should still be able draw some conclusions, however tentative. Also, since this is really just a <em>first step</em>, there’s a good chance that I’ll revisit this topic at a later date and build on what I’ve done here.</p>
+<p>The next couple of sections cover how I wrangle the data into a more manageable form. There’s little to see other than code. If you’re not interested in that kind of thing just <a href="#visualizing-climate-change-in-berlin">skip to the analysis</a>.</p>
 <hr />
 </div>
 <div id="data-import-and-preparation" class="section level2">
@@ -51,8 +58,13 @@ library(psych)
 library(lubridate)
 library(ggplot2)
 library(corrplot)</code></pre>
-<p>The data is a subset of the <a href="https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivtagmonat.html">Deutscher Wetterdienst</a>’s extensive repository of weather data. It’s possible to get hourly measurements, going back decades, but I decided daily averages were enough for this analysis. Downloading the data programmatically from the DWD archive interface would have been horribly complex, so I did it the old-fashioned way: I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.</p>
-<p><em>Edit</em>: While putting the final touches on this post I discovered that the DWD offers FTP access to their databases via the <a href="ftp://ftp-cdc.dwd.de/pub/CDC/">Climate Data Center</a>.</p>
+<div id="importing" class="section level3">
+<h3>Importing</h3>
+<p>The data is a subset of the <a href="https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivtagmonat.html">Deutscher Wetterdienst</a>’s
+extensive repository of weather data. It’s possible to get hourly measurements, going back decades, but I decided daily averages were enough for this analysis. Downloading the data programmatically from the DWD archive interface would have been horribly complex, so I did it the old-fashioned way: I downloaded the data as four ZIPs (from four Berlin weather stations), extracted the TXT/CSV files, renamed them to something more descriptive, and wrote some code to remove some excess white space that was interfering with the data import.</p>
+<blockquote>
+<p><strong>Edit</strong>: While putting the final touches on this post I discovered that the DWD offers FTP access to their databases via the <a href="ftp://ftp-cdc.dwd.de/pub/CDC/">Climate Data Center</a>. I would definitely take this route in future analyses.</p>
+</blockquote>
 <p>The data files are semicolon-delimited. To keep things simple I’ll import everything as character strings. Numeric and date objects are converted later, as needed. The value <code>-999</code> is imported as <code>NA</code>.</p>
 <pre class="r"><code># get the names of  the data files, import them as text, remove white space and
 # overwrite originals with de-whitespaced files
@@ -246,8 +258,9 @@ tempelhof_params %&gt;%
 </tr>
 </tbody>
 </table>
-<div id="tidying-the-data" class="section level3">
-<h3>Tidying the Data</h3>
+</div>
+<div id="tidying" class="section level3">
+<h3>Tidying</h3>
 <p>There are a couple more changes to be made before I can start visualizing. First, <a href="https://www.tidyverse.org/">tidyverse</a> magic works most potently on <em>long</em> data, but the DW uses <em>wide</em> format (<a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data">see the difference here</a>). Second, the variable abbreviations are hard to understand (FM, RSK, etc.), so I should replace them with something else. Third and last, I now have four datasets, one for each Berlin weather station, but one would be preferable.</p>
 <p>I’ll change the variable names using the following map.</p>
 <pre class="r"><code>var_names &lt;- c(&quot;Date&quot; = &quot;MESS_DATUM&quot;,
@@ -261,7 +274,7 @@ tempelhof_params %&gt;%
                &quot;Avg. Temp. (°C)&quot; = &quot;TMK&quot;,
                &quot;Min. Temp. (°C)&quot; = &quot;TNK&quot;,
                &quot;Max Temp. (°C)&quot; = &quot;TXK&quot;,
-               &quot;Avg. Humidity (%)&quot; = &quot;UPM&quot;
+               &quot;Avg. Rel. Humidity (%)&quot; = &quot;UPM&quot;
                )</code></pre>
 <p>The following <code>tidy_data</code> function reduces each data frame to the set of variables I’m interested in, converts the character strings to numbers and dates, and <code>gathers</code> the variables into long format.</p>
 <pre class="r"><code>tidy_data &lt;- function(df, vars, station_name){
@@ -281,7 +294,7 @@ tempelhof_data &lt;- tidy_data(tempelhof_data, var_names, &quot;Tempelhof&quot;)
 
 # combine station data into one data frame
 berlin_data &lt;- rbind(dahlem_lfag_data, dahlem_fu_data, tegel_data, tempelhof_data)</code></pre>
-<p>There’s just one final change I’d like to make: The values reflect daily averages, and measurement began in the 19th century for some stations, so I’m faced with hundreds of thousands of observations! To make things more manageable I’ll include different time scales, e.g. years, months, weeks, days, and <a href="https://en.wikipedia.org/wiki/Season#Meteorological">meteorological seasons</a>. While I’m at it I’ll also convert months and seasons to factors.</p>
+<p>There is just one final change I would like to make: The values reflect daily averages, and measurement began in the 19th century for some stations, so I’m faced with hundreds of thousands of observations! To make things more manageable I’ll include different time scales, e.g. years, months, weeks, days, and <a href="https://en.wikipedia.org/wiki/Season#Meteorological">meteorological seasons</a>. While I’m at it I’ll also convert months and seasons to factors.</p>
 <pre class="r"><code># add years, months, weeks, days, and seasons
 berlin_data &lt;- berlin_data %&gt;% 
     mutate(Year = year(Date),
@@ -351,7 +364,9 @@ berlin_data$Month &lt;- factor(berlin_data$Month,
 </tr>
 </tbody>
 </table>
-<p>Let’s first take a look at how average annual temperatures have changed since 1876. The following time series shows how temperatures in Berlin have increased by about 2°C, with the rate of warming accelerating from about the middle of the last century. There is some variation, but the general trend is unmistakable.</p>
+<div id="average-annual-temperature-change-berlin" class="section level3">
+<h3>Average Annual Temperature Change: Berlin</h3>
+<p>My first question is: How have average annual temperatures changed since 1876? The following time series shows that temperatures in Berlin have increased by about 2°C, on average, with the warming rate apparently accelerating from about the middle of the last century. There is quite a bit of variation, but the general trend is unmistakable.</p>
 <pre class="r"><code># create variable to hold theme (reusable)
 thm &lt;- theme_minimal() + 
     theme(panel.grid.minor = element_blank(),
@@ -366,8 +381,8 @@ berlin_data %&gt;%
     ggplot(aes(x = Year, y = Value)) +  
     geom_line(aes(color = Station)) +
     scale_color_manual(values = c(&quot;#000000&quot;, &quot;#000090&quot;, &quot;#4848ED&quot;, &quot;#8888FF&quot;)) +
-    geom_smooth(se = F, method = &quot;loess&quot;, span = .2, color = &quot;#FF0000&quot;) +
-    labs(title = &quot;Avg. Yearly Temperature (°C), 1876-2017&quot;,
+    geom_smooth(se = F, method = &quot;loess&quot;, span = .8, color = &quot;#FF0000&quot;) +
+    labs(title = &quot;Avg. Yearly Temperature (°C), 1877-2017&quot;,
          y = &quot;Temp.&quot;
          ) +
     thm +
@@ -377,7 +392,7 @@ berlin_data %&gt;%
     scale_y_continuous(limits = c(3, 12),
                        breaks = seq(3, 12, by = 1)
                        )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20mean%20yearly%20temps-1.png" width="672" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-yearly-temps-1.png" width="672" /></p>
 <p>Also conspicuous is the precipitous drop in 1945. Histograms of each year from 1941-1949 reveal bimodal distributions of daily temperatures for most years. One mode is missing from 1945, that is to say, some data is missing, and the data that is available clusters around the low end.</p>
 <pre class="r"><code>berlin_data %&gt;% 
     filter(Station == &quot;Dahlem (LFAG)&quot;,
@@ -396,8 +411,8 @@ berlin_data %&gt;%
     labs(title = &quot;Distribution of Annual Temperatures (°C), 1941-1949&quot;,
          x = &quot;Temperature&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20distribution%20of%20temps%201941-1949-1.png" width="672" /></p>
-<p>A table observation counts (i.e. number of daily averages) confirms that 1945 is missing data.</p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-temps-distribution-1.png" width="672" /></p>
+<p>A table of observation counts (i.e. number of daily averages) confirms that 1945 is missing data.</p>
 <pre class="r"><code>berlin_data %&gt;% 
     filter(Station == &quot;Dahlem (LFAG)&quot;,
            Variable == &quot;Avg. Temp. (°C)&quot;,
@@ -465,16 +480,19 @@ berlin_data %&gt;%
 </tbody>
 </table>
 <p>The <a href="https://en.wikipedia.org/wiki/Battle_of_Berlin">Battle of Berlin</a> was in the spring of 1945, so there’s really no question as to why the data is missing. I could go to the trouble of interpolating values from the flanking years, but I’ll save myself some time and just drop 1945 instead, which shouldn’t have any effect on the overall trend. I’ll also aggregate the station data to make later visualizations a little easier.</p>
-<pre class="r"><code>berlin_data &lt;- berlin_data &lt;- filter(berlin_data, Year != 1945) %&gt;% 
+<pre class="r"><code>berlin_data &lt;- filter(berlin_data, Year != 1945) %&gt;% 
     group_by(Year, Month, Week, Day, Season, Date, Variable) %&gt;% 
     summarise(Value = mean(Value, na.rm = T)) %&gt;% 
     ungroup()</code></pre>
+</div>
+<div id="average-annual-temperature-global-vs.local" class="section level3">
+<h3>Average Annual Temperature: Global vs. Local</h3>
 <p>The next chart compares changes in Berlin’s average yearly temperature with global temperature shifts. First, I need to download some data of global historical temperatures from <a href="https://climate.nasa.gov/vital-signs/global-temperature/">NASA</a>.</p>
 <pre class="r"><code>nasa_data &lt;- read_tsv(&quot;https://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt&quot;,
                       col_names = c(&quot;Year&quot;, &quot;World&quot;, &quot;lowess&quot;),
                       col_types = &quot;idd&quot;
                       )</code></pre>
-<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in global mean temperatures compared to Berlin. Note that the y-axis displays average annual temperature <em>change</em> in °C, and <em>not</em> average annual temperature. What I call change NASA calls <strong>annual average anomaly</strong>, which is the “change in global surface temperature relative to 1951-1980 average temperatures”. To maintain consistency with NASA’s data I’ll also transform the Berlin data to also represent the change from the 1951-1980 average. Also note that I plot Loess curves with <code>span = 0.2</code> to cut out some of the noise.</p>
+<p>I can then combine the NASA data with the Berlin data and visualize them together. The following graph shows the trend in global annual means compared to Berlin’s. Note that the y-axis displays average annual temperature <em>change</em> in °C, and <em>not</em> average annual temperature. What I call change NASA calls <em>annual average anomaly</em>, which is the “change in global surface temperature relative to 1951-1980 average temperatures”. To maintain consistency with NASA’s data I’ll also transform the Berlin data to also represent the change from the 1951-1980 average. Also note that I plot Loess curves (<code>span = 0.2</code>) to cut out the noise.</p>
 <pre class="r"><code>berlin_data %&gt;%
     filter(Variable == &quot;Avg. Temp. (°C)&quot;,
            ) %&gt;%
@@ -492,8 +510,8 @@ berlin_data %&gt;%
     filter(!is.na(Berlin), !is.na(World)) %&gt;% 
     
     # loess transform
-    mutate(Berlin = predict(loess(Berlin ~ Year, data = ., span = 0.2)),
-           World = predict(loess(World ~ Year, data = ., span = 0.2))
+    mutate(Berlin = predict(loess(Berlin ~ Year, data = ., span = 0.3)),
+           World = predict(loess(World ~ Year, data = ., span = 0.3))
            ) %&gt;% 
     
     # tidy and plot
@@ -512,8 +530,58 @@ berlin_data %&gt;%
          title = &quot;Annual Avg. Anomaly (LOESS), World vs. Berlin, 1877-2017&quot;,
          y = &quot;Change (°C)&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/viz%20global%20and%20local%20temp%20change-1.png" width="672" /></p>
-<p>The upward trend in mean annual temperatures in Berlin broadly parallels that of the global aggregate. Interestingly, temperatures seem to be increasing faster in Berlin: average annual temperature has increased by about 2°C since 1925, compared to 1°C globally. This is likely due to the <a href="https://en.wikipedia.org/wiki/Urban_heat_island">urban heat island effect</a>, and would be worth exploring in future analyses.</p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-global-vs-berlin-1.png" width="672" /></p>
+<p>The upward trend in mean annual temperature in Berlin broadly parallels that of the global aggregate. Interestingly, the annual mean seems to be increasing faster in Berlin than it is globally - approximately 2°C vs. 1°C. This is likely due to the <a href="https://en.wikipedia.org/wiki/Urban_heat_island">urban heat island effect</a>, and should be considered in future analyses.</p>
+</div>
+<div id="section" class="section level3">
+<h3></h3>
+<p>The rest of the this analysis focusses on the last six decades, for two reasons: First, most of the increase in annual average temperature occured within that time period, so I think any consequent shifts in other variables will probably occur then, too. Second, data from the prior period come from only one station, are partially incomplete, and some variables simply weren’t measured before about 1957, e.g. sunshine duration and wind speed.</p>
+<p>I’ll also stick to Loess curves</p>
+<pre class="r"><code>berlin_subset &lt;- berlin_data %&gt;% 
+    filter(Year &gt; 1956, complete.cases(.)) %&gt;% 
+    filter(Variable %in% c(&quot;Avg. Air Pressure (hPa)&quot;,
+                           &quot;Avg. Cloud Cover (8th)&quot;,
+                           &quot;Avg. Rel. Humidity (%)&quot;,
+                           &quot;Avg. Temp. (°C)&quot;,
+                           &quot;Avg. Wind Speed (m/sec)&quot;,
+                           &quot;Precipitation (mm)&quot;,
+                           &quot;Snow (cm)&quot;,
+                           &quot;Sun Shine Duration (h)&quot;
+                           )
+           )
+
+berlin_subset %&gt;% 
+    group_by(Year, Variable) %&gt;%  
+    summarize(Value = mean(Value, na.rm = T)) %&gt;% 
+    ggplot(aes(x = Year, y = Value)) +
+    geom_line(alpha = 0.5) +
+    geom_smooth(method = &quot;lm&quot;, se = F) +
+    facet_wrap(~ Variable, scales = &quot;free&quot;, ncol = 4) +
+    thm +
+    scale_x_continuous(breaks = seq(1957, 2017, by = 10))</code></pre>
+<p><img src="/rmarkdown-libs/figure-html4/subset-viz-all-lm-1.png" width="960" /></p>
+<pre class="r"><code>berlin_subset %&gt;% 
+    group_by(Year, Variable) %&gt;%  
+    summarize(Value = mean(Value, na.rm = T)) %&gt;% 
+    ggplot(aes(x = Year, y = Value)) +
+    geom_line(alpha = 0.5) +
+    geom_smooth(method = &quot;loess&quot;, se = F) +
+    facet_wrap(~ Variable, scales = &quot;free&quot;, ncol = 4) +
+    thm +
+    scale_x_continuous(breaks = seq(1957, 2017, by = 10))</code></pre>
+<p><img src="/rmarkdown-libs/figure-html4/subset-viz-all-loess-1.png" width="960" /></p>
+<pre class="r"><code>berlin_subset %&gt;% 
+    filter(Month %in% c(&quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;)) %&gt;% 
+    group_by(Year, Variable) %&gt;%  
+    summarize(Value = mean(Value, na.rm = T)) %&gt;% 
+    ggplot(aes(x = Year, y = Value)) +
+    geom_line(alpha = 0.5) +
+    geom_smooth(method = &quot;loess&quot;, se = F) +
+    facet_wrap(~ Variable, scales = &quot;free&quot;, ncol = 4) +
+    thm +
+    scale_x_continuous(breaks = seq(1957, 2017, by = 10))</code></pre>
+<p><img src="/rmarkdown-libs/figure-html4/subset-viz-summer-loess-1.png" width="960" /></p>
+</div>
 <div id="proportion-of-25c-days" class="section level3">
 <h3>Proportion of +25°C Days</h3>
 <p>Next, I would like to see how the increase in average annual temperatures has affected the high end of the overall distribution of annual temperatures. The following bit of code just stores some useful, reusable settings.</p>
@@ -549,7 +617,7 @@ thm &lt;- thm +
     labs(title = &quot;Proportion of Days with Temp. &gt; 25°C, 1957-2017&quot;,
          y = &quot;Proportion&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/temperatures%20greater%20that%2025C-1.png" width="960" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-temps-25-1.png" width="960" /></p>
 <p>Predictably, the proportion of days with maximum temperatures above 25°C has gone up since 1957, particularly in July and August, but also in May and September. The summer months show a great deal of variation. Also interesting is the fact that June has remained fairly stable even as other months show dramatic increases. This could provide one explanation, via a sort of <a href="https://en.wikipedia.org/wiki/Contrast_effect">contrast effect</a>, for the perception that June’s weather is getting worse, although I’m not so sure this</p>
 </div>
 <div id="sunshine" class="section level3">
@@ -568,7 +636,7 @@ thm &lt;- thm +
     labs(title = &quot;Avg. Daily Sunshine (Hours), 1957-2017&quot;,
          y= &quot;Duration (h)&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/avg.%20daily%20sunshine%20by%20month-1.png" width="960" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-sunshine-1.png" width="960" /></p>
 </div>
 <div id="precipitation" class="section level3">
 <h3>Precipitation</h3>
@@ -585,7 +653,7 @@ thm &lt;- thm +
     labs(title = &quot;Avg. Daily Precipitation (mm), 1957-2017&quot;,
          y= &quot;Amount (mm)&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/avg.%20daily%20precipitation%20by%20month-1.png" width="960" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-precipitation-1.png" width="960" /></p>
 </div>
 <div id="days-without-precipitation" class="section level3">
 <h3>Days Without Precipitation</h3>
@@ -601,7 +669,7 @@ thm &lt;- thm +
     labs(title = &quot;Days Without Precipitation as Proportion of all Days, 1957-2017&quot;,
          y= &quot;Proportion&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/proportion%20days%20without%20precipitation%20by%20month-1.png" width="960" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-no-precipitation-1.png" width="960" /></p>
 </div>
 <div id="air-pressure" class="section level3">
 <h3>Air Pressure</h3>
@@ -609,7 +677,7 @@ thm &lt;- thm +
 <p>To see if air pressure, measured in hectopascals (hPa), is a good indicator of weather conditions, I’ll plot the correlations of some relevant variables in a correlogram. I should note that this probably isn’t the best method to determine how air pressure affects weather. It’s more of a heuristic to help me determine if there is a question here worth answering. Finer-grained air pressure data and variables more closely associated with bad weather, cloud type for instance, in addition to more rigorous statistical methods would allow me to more confidently draw conclusions. But that’s a project for another day.</p>
 <p>First I need to compute a correlation matrix, which requires some transformation. This code <em>widens</em> the data by giving each variable it’s own column (basically the reverse of the above <em>tidying</em> process), and then computes the correlations (Spearman’s <span class="math inline">\(\rho\)</span> in this case).</p>
 <pre class="r"><code>berdat_sub &lt;- berlin_data %&gt;%
-    filter(Month %in% c(&quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, &quot;September&quot;),
+    filter(Month %in% c(&quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;),
            Year &gt; 1956) %&gt;%
     spread(Variable, Value) %&gt;% 
     select(7:17, -`Snow (cm)`, -`Avg. Cloud Cover (8th)`)
@@ -630,13 +698,13 @@ berdat_cortest &lt;- corr.test(x = berdat_sub, method = &quot;spearman&quot;)</c
          mar = c(0, 0, 2, 0),
          col = colorRampPalette(c(&quot;red&quot;, &quot;white&quot;, &quot;blue&quot;))(100)
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/correlogram%20of%20selected%20variables-1.png" width="672" /></p>
-<p>Of particular interest are correlations between <code>PRESS</code> and the other variables that also make intuitive sense, as that would imply that air pressure is a good predictor of weather conditions. We should expect, for example, that high pressure is positively correlated with fair weather, as given by <code>SUN</code>, and negatively correlated with wind and bad weather, as given by <code>WIND_MAX</code>, <code>WIND_AVG</code>, and <code>PRECIP</code>. Looking at the plot, this seems to be the case, so I’ll accept, with the above proviso, that a day’s average air pressure can tell me something about the weather conditions for that day.</p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-correlogram-1.png" width="672" /></p>
+<p>Of particular interest are correlations between air pressure (<code>PRESS</code>) and the other variables that also make intuitive sense, as that would imply that air pressure is a good predictor of weather conditions. We should expect, for example, that high pressure is positively correlated with fair weather, given by sunshine duration (<code>SUN</code>), and negatively correlated with wind and bad weather, as given by maximum and average windspeed (<code>WIND_MAX</code> and <code>WIND_AVG</code>) and the amount of precipitation (<code>PRECIP</code>). Looking at the plot, this seems to be the case, so I’ll accept - for the time being, and with the above proviso - that a day’s average air pressure can tell me something about the weather conditions for that day.</p>
 <p>The final plot displays the number of days per month where there is at least a -3 hPa <em>drop</em> in air pressure compared to the previous day. Although this measure is obviously not perfect, my layperson intuition tells me that an increase in the number of such drops might hint at an increase in storm fronts of a certain intensity.</p>
 <p>The choice of a -3 hPa drop is not completely arbitrary. A convenient table on <a href="http://www.bohlken.net/airpressure2.htm">bohlken.net</a> (a barograph maker) states that a drop of -3 hPa can lead to strong winds of 6-7 Bfts (11-17 m/s), so it seems like a decent place to start.</p>
-<p>The final plot contains the number of days per month with a difference of at least -3 hPa compared to the previous day. There are at least two major problems here: First, the table on bohlken.net relates wind speed increases to a drop in air pressure over a 1-3 hour timeframe, while the data I’m using contains 24-hour means. Second, there is an implicit assumption that bad weather days and good weather days are more or less evenly dispersed, as there wouldn’t otherwise be any difference between consecutive days of the same type. This is very likely not the case.</p>
+<p>Nevertheless, there are at least two major problems here to keep in mind: First, the table on bohlken.net relates wind speed increases to a drop in air pressure over a 1-3 hour timeframe, while the data I’m using contains 24-hour means. Second, there is an implicit assumption that “bad weather” days and “good weather” days are more or less evenly dispersed, as there wouldn’t otherwise be any difference between consecutive days of the same type. This is very likely not the case.</p>
 <p>Still, I’m fairly confident that larger, more extreme storm fronts would leave a trace on daily hPa averages, and that an increase in the amount or intensity of these fluctuations is measurable. I also think that severe weather is still infrequent enough in Berlin that an increasing number of large drops should show up in monthly aggregates.</p>
-<p>The plot below seems to confirm my intuitions. Especially the months May-August show strong upward trends over the last 10-15 years, which one might interpret as an increase in the number of storms of a certain magnitude. This is also consistent with my understanding of how temperature, air pressure, and storm systems relate: The warmer the air, the more water vapor it contains, and the more intense the resulting storms.</p>
+<p>The below plot seems to confirm my intuitions. Especially the months May-August show strong upward trends over the last 10-15 years, which one might interpret as an increase in the number of storms of a certain magnitude. This is also consistent with my understanding of how temperature, air pressure, and storm systems relate: The warmer the air, the more water vapor it contains, and the more intense the resulting storms.</p>
 <pre class="r"><code>berlin_data %&gt;% 
     filter(Variable == &quot;Avg. Air Pressure (hPa)&quot;) %&gt;% 
     filter_group() %&gt;% 
@@ -653,17 +721,13 @@ berdat_cortest &lt;- corr.test(x = berdat_sub, method = &quot;spearman&quot;)</c
     labs(title = &quot;Drop in Air Pressure (hPa) from Previous Day &gt; 3&quot;,
          y= &quot;Number of Days&quot;
          )</code></pre>
-<p><img src="/blog/2018-09-17-how-about-that-weather-an-eda-of-climate-change-in-berlin_files/figure-html/drop%20in%20air%20pressure%20greater%20than%20-3-1.png" width="960" /></p>
+<p><img src="/rmarkdown-libs/figure-html4/viz-pressure-drop-1.png" width="960" /></p>
+<p>It should be noted that this trend is confined to the last 10 to 15 years.</p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>If there is one conclusion that I can confidently draw from the above analysis, it is that Berlin is getting warmer at a rate on par with global average. It is also <a href="https://earthobservatory.nasa.gov/Features/ClimateStorms/page2.php">well known</a> that temperature has an effect on weather systems generally, and storm intensity specifically. In an attempt to find some evidence of such a development in Berlin I analysed temperature, including the number of days per month with highs over 25°C, the average amount of monthly precipitation, the proportion of “dry” to “wet” days, and air pressure shifts as in indication of increasing storm intensity and frequency.</p>
-<p>Taken together, these variables <em>suggest</em> that Berlin is experiencing a 10 to 20 year trend of more extreme weather: Hotter summers punctuated by more intense summer storms. I’ve deduced this from the following:</p>
-<ul>
-<li>Average precipitation has increased without a corresponding increase in the proportion of days with precipitation to those without.</li>
-<li>Daily averages of sunshine duration have, much like the the number of rainless days, remained fairly stable.</li>
-<li>There is a consistent increase in the number of monthly drops in air pressure of a magnitude greater than 3 hPa.</li>
-</ul>
-<p>None</p>
+<p>If there is one conclusion that I can confidently draw from the above analysis, it is that Berlin is getting warmer. It is also <a href="https://earthobservatory.nasa.gov/Features/ClimateStorms/page2.php">well known</a> that temperature has an effect on weather systems generally, and storm intensity specifically. Although I can’t say conclusively, based on the data, that increasing temperatures are causing changes of this type in Berlin, there are are some interesting patterns that seem to hint at just this.</p>
+<p>Taken together, shifts in the amount of summer precipitation, <em>suggest</em> that Berlin is experiencing a 10 to 20 year trend of more extreme weather: Hotter summers punctuated by more intense summer storms. I’ve deduced this from the following:</p>
+<pre><code>* </code></pre>
 </div>
