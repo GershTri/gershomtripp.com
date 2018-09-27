@@ -6,7 +6,7 @@
     <description>Recent content on Gershom Tripp</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Mon, 17 Sep 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 26 Sep 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,10 +14,10 @@
     <item>
       <title>How About That Weather!? - An EDA of Climate Change in Berlin.</title>
       <link>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</link>
-      <pubDate>Mon, 17 Sep 2018 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 26 Sep 2018 00:00:00 +0000</pubDate>
       
       <guid>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</guid>
-      <description>Introduction Data Import and Preparation Importing Tidying  Visualizing Climate Change in Berlin Average Annual Temperature Change: Berlin Average Annual Temperature: Global vs. Local  Proportion of +25°C Days Sunshine Precipitation Days Without Precipitation Air Pressure  Conclusion   Introduction The following exploratory data analysis of climate change in Berlin represents a first step in bringing this often abstract issue closer to home. Why is this necessary? Per Espen Stoknes writes the following about the role of psychological “distance” when it comes to inaction in the face of climate change in his book What We Think About When We Try Not to Think About Global Warming:</description>
+      <description>Introduction Data Import and Preparation Importing Tidying  Visualizing Climate Change in Berlin Average Annual Temperature: Berlin Average Annual Temperature: Global vs. Local An Overview of Selected Variables Proportion of +25°C Days Sunshine Precipitation Days Without Precipitation Air Pressure  Conclusion   Introduction The following exploratory data analysis of climate change in Berlin represents a first step in bringing this often abstract issue closer to home. Why is this necessary?</description>
     </item>
     
     <item>
