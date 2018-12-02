@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>R on Gershom Tripp</title>
-    <link>/categories/r/</link>
-    <description>Recent content in R on Gershom Tripp</description>
+    <title>Germany on Gershom Tripp</title>
+    <link>/tags/germany/</link>
+    <description>Recent content in Germany on Gershom Tripp</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
     <lastBuildDate>Sat, 01 Dec 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/r/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/germany/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -19,15 +19,6 @@
       <guid>/blog/a-tale-of-one-more-city/</guid>
       <description>Bit’o’code to turn nested list into data frame.
 yelp_df_all &amp;lt;- lapply(all_businesses_list, unlist) %&amp;gt;% lapply(., as.list) %&amp;gt;% lapply(., as.data.frame, stringsAsFactors = F) %&amp;gt;% bind_rows() ## Observations: 11,153 ## Variables: 31 ## $ id &amp;lt;chr&amp;gt; &amp;quot;OCPzx3gU8JkiJ1laTcpy7g&amp;quot;, &amp;quot;J8uT9qybm... ## $ alias &amp;lt;chr&amp;gt; &amp;quot;strandbad-werder-mario-müller-werde... ## $ name &amp;lt;chr&amp;gt; &amp;quot;Strandbad Werder Mario Müller&amp;quot;, &amp;quot;La... ## $ image_url &amp;lt;chr&amp;gt; &amp;quot;&amp;quot;, &amp;quot;https://s3-media3.fl.yelpcdn.co... ## $ is_closed &amp;lt;chr&amp;gt; &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, ... ## $ url &amp;lt;chr&amp;gt; &amp;quot;https://www.yelp.com/biz/strandbad-... ## $ review_count &amp;lt;dbl&amp;gt; 1, 1, 6, 11, 21, 3, 3, 1, 8, 11, 4, .</description>
-    </item>
-    
-    <item>
-      <title>How About That Weather!? - An EDA of Climate Change in Berlin.</title>
-      <link>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</link>
-      <pubDate>Wed, 26 Sep 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</guid>
-      <description>Introduction Data Import and Preparation Importing Tidying  Visualizing Climate Change in Berlin Average Annual Temperature: Berlin Average Annual Temperature: Global vs. Local An Overview of Selected Variables Proportion of +25°C Days Sunshine Precipitation Days Without Precipitation Air Pressure  Conclusion    Introduction In his book What We Think About When We Try Not to Think About Global Warming, Per Espen Stoknes writes the following about the role of psychological “distance” when faced with climate change:</description>
     </item>
     
   </channel>

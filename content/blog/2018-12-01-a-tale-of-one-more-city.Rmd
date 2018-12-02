@@ -1,0 +1,76 @@
+---
+title: A Tale of One More City
+author: Gershom Tripp
+date: '2018-12-01'
+categories:
+  - Dataviz
+  - Maps
+  - R
+tags:
+  - Berlin
+  - Germany
+  - culture
+slug: a-tale-of-one-more-city
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r load_packages, include=FALSE}
+library(tidyverse)
+library(ggmap)
+library(maps)
+library(mapdata)
+```
+
+
+```{r load_data}
+load("datasets/yelp/berlin_potsdam_df.rda")
+```
+
+Bit'o'code to turn nested list into data frame.
+
+```{r convert_list_to_df, echo=TRUE, eval=FALSE}
+yelp_df_all <- lapply(all_businesses_list, unlist) %>%
+    lapply(., as.list) %>%
+    lapply(., as.data.frame, stringsAsFactors = F) %>%
+    bind_rows()
+```
+
+```{r convert_to_tibble}
+yelp_df <- as_tibble(yelp_df) %>% 
+    mutate(coordinates.latitude = as.double(coordinates.latitude),
+           coordinates.longitude = as.double(coordinates.longitude),
+           review_count = as.numeric(review_count),
+           rating = as.double(rating)
+           )
+```
+
+```{r show_glimpse}
+glimpse(yelp_df)
+```
+```{r}
+unique(yelp_df$categories.alias)
+unique(yelp_df$categories.alias.1)
+
+```
+
+```{r message=FALSE, warning=FALSE}
+berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8812, top = 52.6918)
+berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-lite")
+
+yelp_curry <- yelp_df %>% 
+    filter(location.state == "BE" | location.city %in% c("Berlin", "Potsdam"))
+
+
+berlin_map %>% 
+    ggmap() + 
+    geom_point(data = yelp_curry, aes(coordinates.longitude, coordinates.latitude), color = "red", size = 0.1, alpha = .1)
+
+
+```
+
+
+
+

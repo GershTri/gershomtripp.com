@@ -330,6 +330,51 @@ berlin_data$Month &lt;- factor(berlin_data$Month,
                                        )
                             )</code></pre>
 <hr />
+<pre class="r"><code>berlin_data %&gt;% 
+    select(Date, Variable, Value, Station) %&gt;% 
+    spread(Variable, Value) %&gt;% 
+    group_by(Station) %&gt;% 
+    summary()</code></pre>
+<pre><code>##       Date                     Station      Avg. Air Pressure (hPa)
+##  Min.   :1876-01-01   Dahlem (LFAG):31586   Min.   : 961           
+##  1st Qu.:1946-05-23   Dahlem (FU)  :24837   1st Qu.:1003           
+##  Median :1971-06-03   Tempelhof    :25568   Median :1009           
+##  Mean   :1965-01-08   Tegel        :20089   Mean   :1009           
+##  3rd Qu.:1994-09-17                         3rd Qu.:1015           
+##  Max.   :2017-12-31                         Max.   :1049           
+##                                             NA&#39;s   :11             
+##  Avg. Cloud Cover (8th) Avg. Rel. Humidity (%) Avg. Temp. (°C)  
+##  Min.   :0.000          Min.   : 25.00         Min.   :-22.600  
+##  1st Qu.:3.700          1st Qu.: 67.00         1st Qu.:  3.400  
+##  Median :5.700          Median : 77.00         Median :  9.500  
+##  Mean   :5.257          Mean   : 75.38         Mean   :  9.407  
+##  3rd Qu.:7.300          3rd Qu.: 86.00         3rd Qu.: 15.600  
+##  Max.   :8.000          Max.   :100.00         Max.   : 30.800  
+##  NA&#39;s   :3348           NA&#39;s   :16565          NA&#39;s   :5        
+##  Avg. Vapor Pressure (hPa) Avg. Wind Speed (m/sec) Max Temp. (°C)  
+##  Min.   : 1.100            Min.   : 0.00           Min.   :-17.00  
+##  1st Qu.: 6.300            1st Qu.: 2.60           1st Qu.:  6.20  
+##  Median : 8.900            Median : 3.50           Median : 13.40  
+##  Mean   : 9.487            Mean   : 3.77           Mean   : 13.32  
+##  3rd Qu.:12.400            3rd Qu.: 4.70           3rd Qu.: 20.50  
+##  Max.   :24.000            Max.   :14.50           Max.   : 38.10  
+##  NA&#39;s   :16549             NA&#39;s   :74783                           
+##  Max Wind Speed (m/sec) Min. Temp. (°C)   Precipitation (mm)
+##  Min.   : 2.10          Min.   :-26.000   Min.   :  0.000   
+##  1st Qu.: 7.70          1st Qu.:  0.500   1st Qu.:  0.000   
+##  Median : 9.90          Median :  5.600   Median :  0.000   
+##  Mean   :10.58          Mean   :  5.517   Mean   :  1.593   
+##  3rd Qu.:12.60          3rd Qu.: 11.100   3rd Qu.:  1.500   
+##  Max.   :36.00          Max.   : 23.800   Max.   :196.900   
+##  NA&#39;s   :74776                            NA&#39;s   :2         
+##    Snow (cm)      Sunshine Duration (h)
+##  Min.   : 0.000   Min.   : 0.00        
+##  1st Qu.: 0.000   1st Qu.: 0.30        
+##  Median : 0.000   Median : 3.62        
+##  Mean   : 0.627   Mean   : 4.64        
+##  3rd Qu.: 0.000   3rd Qu.: 7.90        
+##  Max.   :55.000   Max.   :16.40        
+##  NA&#39;s   :3352     NA&#39;s   :42493</code></pre>
 </div>
 </div>
 <div id="visualizing-climate-change-in-berlin" class="section level1">

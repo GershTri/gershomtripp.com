@@ -266,6 +266,13 @@ berlin_data$Month <- factor(berlin_data$Month,
 
 
 
+```{r}
+berlin_data %>% 
+    select(Date, Variable, Value, Station) %>% 
+    spread(Variable, Value) %>% 
+    group_by(Station) %>% 
+    summary()
+```
 
 
 
