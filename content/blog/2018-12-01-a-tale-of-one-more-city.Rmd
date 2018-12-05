@@ -294,12 +294,13 @@ yelp_df %>%
            ) %>% 
     ggplot(aes(y = Category, x = Count)) +
     geom_point(shape = 21, fill = "lightblue") + 
+    scale_x_continuous(breaks = seq(100, 1500, 200)) +
     theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank()
           ) + 
-    ggtitle("Thirty Most-Reviewed Categories")
+    ggtitle("Thirty Categories with the Most Yelp Listings")
 ```
 
 
@@ -349,44 +350,66 @@ props_berlin_df <- yelp_df %>%
     group_by(categories.title) %>% 
     count() %>% 
     arrange(desc(n)) %>% 
-    mutate(Proportion = round(n/sum(.$n), 3)) %>% 
-    select(categories.title, Proportion) %>% 
-    rename(Category = categories.title)
+    mutate(Proportion_berlin = n/sum(.$n)) %>% 
+    rename(n_berlin = n)
 
-# function returns businesses with greater prevalence in district than in berlin
 get_unique_businesses <- function(district_name, main_props_df = props_berlin_df){
     props_district <- yelp_df %>% 
         filter(district == district_name) %>% 
         group_by(district, categories.title) %>% 
         count() %>% 
-        ungroup() %>% 
+        ungroup() %>%
+        filter(n/sum(n) >= 0.01) %>% 
         arrange(desc(n)) %>% 
-        mutate(Proportion = round(n/sum(.$n), 3)) %>% 
-        select(district, categories.title, Proportion) %>% 
-        rename(Category = categories.title)
+        mutate(Proportion_district = n/sum(.$n)) %>% 
+        rename(n_district = n)
 
-    props_diff_df <- left_join(props_district, main_props_df, by = "Category") %>% 
-        mutate(Proportion.x = Proportion.x * 100,
-               Proportion.y = Proportion.y * 100,
-               diff = Proportion.x - Proportion.y) %>% 
+    props_diff_df <- left_join(props_district,
+                               main_props_df,
+                               by = "categories.title"
+                               ) %>%
+        mutate(Proportion_district = Proportion_district,
+               Proportion_berlin = Proportion_berlin,
+               diff = Proportion_district - Proportion_berlin) %>% 
         filter(diff > 0) %>% 
         arrange(desc(diff))
     
-    fac <- factor(props_diff_df$Category[1:12],
-                  ordered = T,
-                  levels = props_diff_df$Category[1:12]
-                  )
-    fac
+    props_diff_df
 }
 
+get_unique_businesses_incid <- function(district_name, main_props_df = props_berlin_df){
+    props_district <- yelp_df %>% 
+        filter(district == district_name) %>% 
+        group_by(district, categories.title) %>% 
+        count() %>% 
+        ungroup() %>%
+        filter(n/sum(n) >= 0.01) %>% 
+        arrange(desc(n)) %>% 
+        mutate(Proportion_district = n/sum(.$n)) %>% 
+        rename(n_district = n)
 
-
+    n_all_biz_city <- length(unique(yelp_df$id))
+    n_all_biz_district <- length(unique(filter(yelp_df, district == district_name)$id))
+    
+    props_diff_df <- left_join(props_district,
+                               main_props_df,
+                               by = "categories.title"
+                               ) %>%
+        mutate(diff = n_district/n_berlin * n_all_biz_city/n_all_biz_district) %>% 
+        arrange(desc(diff))
+    
+    props_diff_df
+}
 ```
 
 ```{r plot_top_10_friedrichshain_kreuzberg, warning=F, message=F, fig.height=8}
 district_name <- "Friedrichshain-Kreuzberg"
 
-fried_kreuz_ord <- get_unique_businesses(district_name)
+fried_kreuz_df <- get_unique_businesses(district_name)
+fried_kreuz_df_incid <- get_unique_businesses_incid(district_name)
+
+fried_kreuz_df
+fried_kreuz_df_incid
 
 fried_kreuz_df <- yelp_df %>%
     filter(district == district_name, categories.title %in% fried_kreuz_ord) %>% 
