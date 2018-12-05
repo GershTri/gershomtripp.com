@@ -2,14 +2,12 @@
 title: A Tale of One More City
 author: Gershom Tripp
 date: '2018-12-01'
-categories:
-  - Dataviz
-  - Maps
-  - R
 tags:
   - Berlin
   - Germany
-  - culture
+  - Yelp
+  - R
+  - Dataviz
 slug: a-tale-of-one-more-city
 ---
 
@@ -22,55 +20,668 @@ library(tidyverse)
 library(ggmap)
 library(maps)
 library(mapdata)
+library(ggstance)
+library(gridExtra)
 ```
 
 
-```{r load_data}
-load("datasets/yelp/berlin_potsdam_df.rda")
+```{r load_data, include=FALSE}
+load("datasets/yelp/berlin_yelp_sf_info.rda")
 ```
 
-Bit'o'code to turn nested list into data frame.
+```{r reduce_restructure_yelp_df, include=FALSE}
+# extract categories from categories.title.1
+cat_titles1 <- yelp_df %>% 
+    filter(!is.na(categories.title.1)) %>% 
+    select(-categories.title) %>% 
+    rename(categories.title = categories.title.1)
 
-```{r convert_list_to_df, echo=TRUE, eval=FALSE}
-yelp_df_all <- lapply(all_businesses_list, unlist) %>%
-    lapply(., as.list) %>%
-    lapply(., as.data.frame, stringsAsFactors = F) %>%
-    bind_rows()
+# extract categories from categories.title.2
+cat_titles2 <- yelp_df %>% 
+    filter(!is.na(categories.title.2)) %>% 
+    select(-categories.title) %>% 
+    rename(categories.title = categories.title.2)
+
+# recombind above data frames with yelp_df and remove unneeded variables
+yelp_df <- bind_rows(yelp_df, cat_titles1, cat_titles2) %>% 
+    select(-c(alias, image_url, is_closed, url, starts_with("categories.alias"),
+              starts_with("location.address"), starts_with("location.disp"),
+              phone, display_phone, starts_with("categories.title."),
+              location.country
+              )
+           )
+
+rm(cat_titles1, cat_titles2)
 ```
 
-```{r convert_to_tibble}
-yelp_df <- as_tibble(yelp_df) %>% 
-    mutate(coordinates.latitude = as.double(coordinates.latitude),
-           coordinates.longitude = as.double(coordinates.longitude),
-           review_count = as.numeric(review_count),
-           rating = as.double(rating)
+Intro here.
+
+
+
+
+
+
+
+
+
+
+## Some Demographics
+
+```{r plot_population_density}
+density_breaks <- sort(round(sf_info_df$pop_dense))[c(2, 6, 8, 11, 12)]
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = sf_info_df$pop_dense)) + 
+    scale_fill_viridis_c(breaks = density_breaks) +
+    labs(title = "Population Density (People per km^2)", fill = "density") +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5)
+    )
+rm(density_breaks)
+```
+
+```{r plot_foreign_residents}
+foreign_breaks <- sort(sf_info_df$foreign)[c(2, 8, 10, 11, 12)]
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = sf_info_df$foreign)) + 
+    scale_fill_viridis_c(breaks = foreign_breaks) +
+    labs(title = "Proportion of Foreign Residents", fill = "proportion") +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5)
+    )
+rm(foreign_breaks)
+```
+
+```{r plot_average_age}
+age_breaks <- sort(sf_info_df$avg_age)[c(1, 3, 5, 9, 12)]
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = sf_info_df$avg_age)) + 
+    scale_fill_viridis_c(breaks = age_breaks, direction = -1) +
+    labs(title = "Average Age of Residents", fill = "mean") +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5)
+    )
+rm(age_breaks)
+```
+
+
+```{r modify_pol_parties, include=FALSE}
+# sum the rows to get proportions
+pol_parties$Sum <- rowSums(pol_parties[,2:8])
+
+# translate German and calculate proportion
+pol_parties <- pol_parties %>% 
+    rename(Rest = Sonstige) %>% 
+    mutate(SPD = SPD/Sum,
+           CDU = CDU/Sum,
+           Grüne = Grüne/Sum,
+           Linke = Linke/Sum,
+           AfD = AfD/Sum,
+           FDP = FDP/Sum,
+           Rest = Rest/Sum
+           ) %>% 
+    select(-Sum) %>% 
+    rename(`Die Grünen` = Grüne, `Die Linke` = Linke)
+
+# tidy data frame
+pol_parties <- pol_parties %>%
+    gather(Party, Proportion, -District) %>% 
+    arrange(District)
+
+pol_parties$District <- factor(pol_parties$District,
+                               ordered = T,
+                               levels = rev(unique(pol_parties$District))
+                               )
+
+pol_parties$Party <- factor(pol_parties$Party,
+                            ordered = T,
+                            levels = c("Die Linke", "SPD", "Die Grünen",
+                                       "CDU", "FDP", "AfD", "Rest"
+                                       )
+                            )
+
+# remove duplicated neukölln
+pol_parties <- pol_parties %>% distinct()
+
+# include size scale
+dom_berlin <- pol_parties %>% 
+    filter(District == "Berlin") %>% 
+    select(Party, Proportion)
+
+dom_berlin$Proportion <- c(10, 8.5, 6, 6, 4, 2.5, 1)
+
+dom_berlin <- dom_berlin %>% 
+    mutate(Proportion = as.integer(Proportion)) %>% 
+    rename(`Dominance - Berlin` = Proportion)
+
+pol_parties <- full_join(pol_parties, dom_berlin, by = "Party")
+
+# manually modify Die Grünen and Die Linke in Berlin to deal with overlap
+pol_parties[3, "Dominance - Berlin"] <- 7
+pol_parties[4, "Dominance - Berlin"] <- 6
+
+
+# rank according to afd dominance
+afd_dom <- pol_parties %>%
+    filter(Party == "AfD") %>% 
+    arrange(Proportion) %>% 
+    filter(District != "Berlin") %>%
+    mutate(afd_rank = 0:11) %>% 
+    select(-(2:4))
+
+afd_dom <- rbind(afd_dom, c("Berlin", 12)) %>% 
+    mutate(afd_rank = as.integer(afd_rank))
+
+pol_parties <- full_join(pol_parties, afd_dom, by = "District")
+
+pol_parties <- pol_parties %>%
+    mutate(District = factor(District,
+                             levels = arrange(pol_parties, afd_rank) %>% 
+                                 .$District %>% 
+                                 unique()
+                             )
            )
 ```
 
+
+```{r plot_political_parties, fig.height=7, fig.width=6.5}
+ggplot(pol_parties, aes(y = District,
+                        x = Proportion,
+                        group = District,
+                        color = Party
+                        )
+       ) +
+    geom_point(size = pol_parties$`Dominance - Berlin`) + 
+    scale_color_manual(values = c("purple", "red", "#229954", "black",
+                                  "#F7DC6F", "#3498DB", "grey"
+                                  )
+                       ) +
+    theme_minimal() +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          plot.title = element_text(hjust = 0.5)
+          ) + 
+    ggtitle("Party Dominance by District")
+```
+
+```{r plot_afd_representation}
+afd_district <- pol_parties %>% 
+    filter(Party == "AfD", District != "Berlin")
+
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = afd_district$Proportion)) + 
+    scale_fill_viridis_c() +
+    labs(title = "AfD Representation by District", fill = "proportion") +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5)
+    )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Characterizing Berlin Districts Through Yelp Reviews
+
+First, a glimpse of the data.
+
 ```{r show_glimpse}
-glimpse(yelp_df)
-```
-```{r}
-unique(yelp_df$categories.alias)
-unique(yelp_df$categories.alias.1)
-
-```
-
-```{r message=FALSE, warning=FALSE}
-berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8812, top = 52.6918)
-berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-lite")
-
-yelp_curry <- yelp_df %>% 
+# filter for berlin and potsdam
+yelp_df <- yelp_df %>% 
     filter(location.state == "BE" | location.city %in% c("Berlin", "Potsdam"))
 
+glimpse(yelp_df)
+```
+
+Although the total number of observations from the dataset is `r nrow(yelp_df)`,
+the total number of businesses is actually `r length(unique(yelp_df$id))`. The
+remaining `r nrow(yelp_df) - length(unique(yelp_df$id))` observations are duplicates
+
+```{r plot_all_businesses_berlin, message=FALSE, warning=FALSE}
+berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8000, top = 52.6918)
+berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-lite")
 
 berlin_map %>% 
     ggmap() + 
-    geom_point(data = yelp_curry, aes(coordinates.longitude, coordinates.latitude), color = "red", size = 0.1, alpha = .1)
+    geom_point(data = yelp_df %>%
+                   select(id, coordinates.latitude, coordinates.longitude) %>% 
+                   distinct(),
+               aes(coordinates.longitude, coordinates.latitude),
+               color = "red", size = 0.1, alpha = .1) + 
+    ggtitle("Distribution of All Yelp-Reviewed Businesses") + 
+    theme(axis.text = element_blank(),
+          axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5)
+          )
+```
 
-
+```{r plot_30_most_reviewed_berlin}
+yelp_df %>% 
+    group_by(categories.title) %>% 
+    count() %>% 
+    arrange(desc(n)) %>%
+    head(30) %>% 
+    rename(Category = categories.title, Count = n) %>% 
+    ungroup() %>% 
+    mutate(Category = factor(Category,
+                             ordered = T,
+                             levels = rev(.$Category)
+                             )
+           ) %>% 
+    ggplot(aes(y = Category, x = Count)) +
+    geom_point(shape = 21, fill = "lightblue") + 
+    theme_minimal() +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_blank()
+          ) + 
+    ggtitle("Thirty Most-Reviewed Categories")
 ```
 
 
 
 
+
+
+
+
+
+
+
+<br>
+
+## Friedrichshain-Kreuzberg
+
+```{r set_up_color_map_function}
+district_color_map <- unique(shapefile$Districts)
+district_color_map <- data_frame(district = district_color_map, color = "grey")
+
+district_name <- "Friedrichshain-Kreuzberg"
+
+highlight_district <- function(district_name, color_map = district_color_map){
+    color_map[which(color_map$district == district_name), "color"] <- "red"
+    color_map
+}
+
+```
+
+```{r highlight_friedrichshain_kreuzberg, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Friedrichshain-Kreuzberg")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+```{r set_up_functions_for_district_analysis, message=FALSE, warning=FALSE}
+# set up data frame of proportions for berlin
+props_berlin_df <- yelp_df %>% 
+    group_by(categories.title) %>% 
+    count() %>% 
+    arrange(desc(n)) %>% 
+    mutate(Proportion = round(n/sum(.$n), 3)) %>% 
+    select(categories.title, Proportion) %>% 
+    rename(Category = categories.title)
+
+# function returns businesses with greater prevalence in district than in berlin
+get_unique_businesses <- function(district_name, main_props_df = props_berlin_df){
+    props_district <- yelp_df %>% 
+        filter(district == district_name) %>% 
+        group_by(district, categories.title) %>% 
+        count() %>% 
+        ungroup() %>% 
+        arrange(desc(n)) %>% 
+        mutate(Proportion = round(n/sum(.$n), 3)) %>% 
+        select(district, categories.title, Proportion) %>% 
+        rename(Category = categories.title)
+
+    props_diff_df <- left_join(props_district, main_props_df, by = "Category") %>% 
+        mutate(Proportion.x = Proportion.x * 100,
+               Proportion.y = Proportion.y * 100,
+               diff = Proportion.x - Proportion.y) %>% 
+        filter(diff > 0) %>% 
+        arrange(desc(diff))
+    
+    fac <- factor(props_diff_df$Category[1:12],
+                  ordered = T,
+                  levels = props_diff_df$Category[1:12]
+                  )
+    fac
+}
+
+
+
+```
+
+```{r plot_top_10_friedrichshain_kreuzberg, warning=F, message=F, fig.height=8}
+district_name <- "Friedrichshain-Kreuzberg"
+
+fried_kreuz_ord <- get_unique_businesses(district_name)
+
+fried_kreuz_df <- yelp_df %>%
+    filter(district == district_name, categories.title %in% fried_kreuz_ord) %>% 
+    mutate(categories.title = factor(categories.title,
+                                     ordered = T,
+                                     levels = levels(fried_kreuz_ord)
+                                     )
+           )
+
+qmplot(data = fried_kreuz_df,
+       x = coordinates.longitude,
+       y = coordinates.latitude,
+       maptype = "toner-lite",
+       color = I("red"),
+       size = I(1)
+       ) + 
+    facet_wrap(~ categories.title, ncol = 3) +
+    theme_minimal() +
+    theme(axis.title = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank()
+          )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Mitte
+
+```{r highlight_mitte, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Mitte")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Charlottenburg-Wilmersdorf
+
+```{r highlight_charlottenburg_wilmersdorf, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Charlottenburg-Wilmersdorf")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Steglitz-Zehlendorf
+
+```{r highlight_steglitz_zehlendorf, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Steglitz-Zehlendorf")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Tempelhof-Schöneberg
+
+```{r highlight_tempelhof_schöneberg, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Tempelhof-Schöneberg")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Neukölln
+
+```{r highlight_neukoelln, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Neukölln")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Treptow-Köpenick
+
+```{r highlight_treptow_koepenick, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Treptow-Köpenick")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Marzahn-Hellersdorf
+
+```{r highlight_marzahn_hellersdorf, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Marzahn-Hellersdorf")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Lichtenberg
+
+```{r highlight_lichtenberg, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Lichtenberg")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Pankow
+
+```{r highlight_pankow, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Pankow")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Reinickendorf
+
+```{r highlight_reinikendorf, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Reinickendorf")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```
+
+
+
+
+
+
+
+
+
+<br>
+
+## Spandau
+
+```{r highlight_spandau, fig.height=1.5, fig.width=2.5}
+cmap <- highlight_district("Spandau")
+
+ggplot(shapefile) +
+    geom_sf(aes(fill = cmap$color)) +
+    scale_fill_manual(values = c("grey", "red"), guide = F) +
+    theme(
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
+    )
+```

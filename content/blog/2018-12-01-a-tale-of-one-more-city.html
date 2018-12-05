@@ -2,281 +2,105 @@
 title: A Tale of One More City
 author: Gershom Tripp
 date: '2018-12-01'
-categories:
-  - Dataviz
-  - Maps
-  - R
 tags:
   - Berlin
   - Germany
-  - culture
+  - Yelp
+  - R
+  - Dataviz
 slug: a-tale-of-one-more-city
 ---
 
 
 
-<p>Bit’o’code to turn nested list into data frame.</p>
-<pre class="r"><code>yelp_df_all &lt;- lapply(all_businesses_list, unlist) %&gt;%
-    lapply(., as.list) %&gt;%
-    lapply(., as.data.frame, stringsAsFactors = F) %&gt;%
-    bind_rows()</code></pre>
-<pre><code>## Observations: 11,153
-## Variables: 31
-## $ id                        &lt;chr&gt; &quot;OCPzx3gU8JkiJ1laTcpy7g&quot;, &quot;J8uT9qybm...
-## $ alias                     &lt;chr&gt; &quot;strandbad-werder-mario-müller-werde...
-## $ name                      &lt;chr&gt; &quot;Strandbad Werder Mario Müller&quot;, &quot;La...
-## $ image_url                 &lt;chr&gt; &quot;&quot;, &quot;https://s3-media3.fl.yelpcdn.co...
-## $ is_closed                 &lt;chr&gt; &quot;FALSE&quot;, &quot;FALSE&quot;, &quot;FALSE&quot;, &quot;FALSE&quot;, ...
-## $ url                       &lt;chr&gt; &quot;https://www.yelp.com/biz/strandbad-...
-## $ review_count              &lt;dbl&gt; 1, 1, 6, 11, 21, 3, 3, 1, 8, 11, 4, ...
-## $ categories.alias          &lt;chr&gt; &quot;beaches&quot;, &quot;italian&quot;, &quot;beergarden&quot;, ...
-## $ categories.title          &lt;chr&gt; &quot;Beaches&quot;, &quot;Italian&quot;, &quot;Beer Garden&quot;,...
-## $ rating                    &lt;dbl&gt; 1.0, 5.0, 3.5, 3.5, 3.0, 4.5, 4.0, 5...
-## $ coordinates.latitude      &lt;dbl&gt; 52.38199, 52.39947, 52.31798, 52.313...
-## $ coordinates.longitude     &lt;dbl&gt; 12.90969, 12.91887, 12.92911, 12.939...
-## $ location.address1         &lt;chr&gt; &quot;Am Plessower See 46&quot;, &quot;Zum Großen Z...
-## $ location.city             &lt;chr&gt; &quot;Werder&quot;, &quot;Werder (havel)&quot;, &quot;Caputh&quot;...
-## $ location.zip_code         &lt;chr&gt; &quot;14542&quot;, &quot;14542&quot;, &quot;14548&quot;, &quot;14548&quot;, ...
-## $ location.country          &lt;chr&gt; &quot;DE&quot;, &quot;DE&quot;, &quot;DE&quot;, &quot;DE&quot;, &quot;DE&quot;, &quot;DE&quot;, ...
-## $ location.state            &lt;chr&gt; &quot;BB&quot;, &quot;BB&quot;, &quot;BB&quot;, &quot;BB&quot;, &quot;BB&quot;, &quot;BB&quot;, ...
-## $ location.display_address1 &lt;chr&gt; &quot;Am Plessower See 46&quot;, &quot;Zum Großen Z...
-## $ location.display_address2 &lt;chr&gt; &quot;14542 Werder&quot;, &quot;14542 Werder (havel...
-## $ location.display_address3 &lt;chr&gt; &quot;Germany&quot;, &quot;Germany&quot;, &quot;Germany&quot;, &quot;Ge...
-## $ phone                     &lt;chr&gt; &quot;+49332742111&quot;, &quot;+4933277278232&quot;, &quot;+...
-## $ display_phone             &lt;chr&gt; &quot;+49 3327 42111&quot;, &quot;+49 3327 7278232&quot;...
-## $ price                     &lt;chr&gt; NA, &quot;€€€&quot;, &quot;€€€&quot;, &quot;€€€&quot;, &quot;€€&quot;, &quot;€&quot;, ...
-## $ location.address2         &lt;chr&gt; NA, &quot;&quot;, &quot;&quot;, NA, NA, NA, NA, NA, &quot;&quot;, ...
-## $ location.address3         &lt;chr&gt; NA, &quot;&quot;, NA, NA, NA, NA, NA, NA, NA, ...
-## $ categories.alias.1        &lt;chr&gt; NA, NA, &quot;german&quot;, &quot;german&quot;, &quot;german&quot;...
-## $ categories.title.1        &lt;chr&gt; NA, NA, &quot;German&quot;, &quot;German&quot;, &quot;German&quot;...
-## $ categories.alias.2        &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;caf...
-## $ categories.title.2        &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;Caf...
-## $ location.display_address4 &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, ...
-## $ location.display_address5 &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, ...</code></pre>
-<pre><code>##   [1] &quot;beaches&quot;              &quot;italian&quot;              &quot;beergarden&quot;          
-##   [4] &quot;hotels&quot;               &quot;insurance&quot;            &quot;mediterranean&quot;       
-##   [7] &quot;chinese&quot;              &quot;tapas&quot;                &quot;bedbreakfast&quot;        
-##  [10] &quot;currysausage&quot;         &quot;icecream&quot;             &quot;german&quot;              
-##  [13] &quot;cafes&quot;                &quot;fooddeliveryservices&quot; &quot;restaurants&quot;         
-##  [16] &quot;creperies&quot;            &quot;steak&quot;                &quot;seafood&quot;             
-##  [19] &quot;eventplanning&quot;        &quot;pizza&quot;                &quot;canteen&quot;             
-##  [22] &quot;lakes&quot;                &quot;landmarks&quot;            &quot;bakeries&quot;            
-##  [25] &quot;hotdogs&quot;              &quot;sushi&quot;                &quot;parks&quot;               
-##  [28] &quot;museums&quot;              &quot;french&quot;               &quot;funeralservices&quot;     
-##  [31] &quot;indpak&quot;               &quot;pubs&quot;                 &quot;sportsbars&quot;          
-##  [34] &quot;cafeteria&quot;            &quot;kebab&quot;                &quot;burgers&quot;             
-##  [37] &quot;greek&quot;                &quot;gardens&quot;              &quot;meats&quot;               
-##  [40] &quot;beachbars&quot;            &quot;wine_bars&quot;            &quot;delis&quot;               
-##  [43] &quot;thai&quot;                 &quot;catering&quot;             &quot;bistros&quot;             
-##  [46] &quot;modern_european&quot;      &quot;brasseries&quot;           &quot;coffee&quot;              
-##  [49] &quot;bars&quot;                 &quot;cupcakes&quot;             &quot;vietnamese&quot;          
-##  [52] &quot;panasian&quot;             &quot;culturalcenter&quot;       &quot;international&quot;       
-##  [55] &quot;turkish&quot;              &quot;hookah_bars&quot;          &quot;organic_stores&quot;      
-##  [58] &quot;zoos&quot;                 &quot;tours&quot;                &quot;churches&quot;            
-##  [61] &quot;divebars&quot;             &quot;spanish&quot;              &quot;lebanese&quot;            
-##  [64] &quot;cocktailbars&quot;         &quot;chickenshop&quot;          &quot;serbocroatian&quot;       
-##  [67] &quot;cakeshop&quot;             &quot;persian&quot;              &quot;bagels&quot;              
-##  [70] &quot;vegan&quot;                &quot;soup&quot;                 &quot;sandwiches&quot;          
-##  [73] &quot;irish_pubs&quot;           &quot;localflavor&quot;          &quot;streetvendors&quot;       
-##  [76] &quot;breakfast_brunch&quot;     &quot;lounges&quot;              &quot;publicart&quot;           
-##  [79] &quot;tea&quot;                  &quot;bavarian&quot;             &quot;danceclubs&quot;          
-##  [82] &quot;karaoke&quot;              &quot;pakistani&quot;            &quot;gourmet&quot;             
-##  [85] &quot;russian&quot;              &quot;hotelstravel&quot;         &quot;hotdog&quot;              
-##  [88] &quot;fischbroetchen&quot;       &quot;latin&quot;                &quot;bathing_area&quot;        
-##  [91] &quot;easterngerman&quot;        &quot;fabricstores&quot;         &quot;argentine&quot;           
-##  [94] &quot;amusementparks&quot;       &quot;dinnertheater&quot;        &quot;dog_parks&quot;           
-##  [97] &quot;swimmingpools&quot;        &quot;hostels&quot;              &quot;golf&quot;                
-## [100] &quot;amateursportsteams&quot;   &quot;austrian&quot;             &quot;galleries&quot;           
-## [103] &quot;indonesian&quot;           &quot;tradamerican&quot;         &quot;desserts&quot;            
-## [106] &quot;boating&quot;              &quot;food&quot;                 &quot;venues&quot;              
-## [109] &quot;boatcharters&quot;         &quot;mexican&quot;              &quot;fishnchips&quot;          
-## [112] &quot;oriental&quot;             &quot;mideastern&quot;           &quot;falafel&quot;             
-## [115] &quot;grocery&quot;              &quot;pensions&quot;             &quot;poolhalls&quot;           
-## [118] &quot;salad&quot;                &quot;swabian&quot;              &quot;coffeeroasteries&quot;    
-## [121] &quot;diners&quot;               &quot;foodstands&quot;           &quot;hiking&quot;              
-## [124] &quot;arts&quot;                 &quot;couriers&quot;             &quot;bbq&quot;                 
-## [127] &quot;artmuseums&quot;           &quot;vegetarian&quot;           &quot;musicvenues&quot;         
-## [130] &quot;japanese&quot;             &quot;delicatessen&quot;         &quot;libraries&quot;           
-## [133] &quot;polish&quot;               &quot;education&quot;            &quot;korean&quot;              
-## [136] &quot;portuguese&quot;           &quot;tex-mex&quot;              &quot;juicebars&quot;           
-## [139] &quot;african&quot;              &quot;filipino&quot;             &quot;pettingzoos&quot;         
-## [142] &quot;architects&quot;           &quot;swimminglessons&quot;      &quot;climbing&quot;            
-## [145] &quot;airportlounges&quot;       &quot;theater&quot;              &quot;bubbletea&quot;           
-## [148] &quot;tobaccoshops&quot;         &quot;thrift_stores&quot;        &quot;georgian&quot;            
-## [151] &quot;brazilian&quot;            &quot;asianfusion&quot;          &quot;schnitzel&quot;           
-## [154] &quot;eltern_cafes&quot;         &quot;macarons&quot;             &quot;coffeeteasupplies&quot;   
-## [157] &quot;rhinelandian&quot;         &quot;breweries&quot;            &quot;bulgarian&quot;           
-## [160] &quot;giftshops&quot;            &quot;antiques&quot;             &quot;casinos&quot;             
-## [163] &quot;playgrounds&quot;          &quot;moroccan&quot;             &quot;buffets&quot;             
-## [166] &quot;apartments&quot;           &quot;menscloth&quot;            &quot;beer_and_wine&quot;       
-## [169] &quot;waffles&quot;              &quot;dimsum&quot;               &quot;hawaiian&quot;            
-## [172] &quot;gastropubs&quot;           &quot;bangladeshi&quot;          &quot;bowling&quot;             
-## [175] &quot;bookstores&quot;           &quot;fitness&quot;              &quot;childcare&quot;           
-## [178] &quot;speakeasies&quot;          &quot;jazzandblues&quot;         &quot;localservices&quot;       
-## [181] NA                     &quot;arabian&quot;              &quot;flowers&quot;             
-## [184] &quot;israeli&quot;              &quot;peruvian&quot;             &quot;notaries&quot;            
-## [187] &quot;deptstores&quot;           &quot;mini_golf&quot;            &quot;tapasmallplates&quot;     
-## [190] &quot;taiwanese&quot;            &quot;singaporean&quot;          &quot;beerbar&quot;             
-## [193] &quot;kosher&quot;               &quot;gaybars&quot;              &quot;chocolate&quot;           
-## [196] &quot;food_court&quot;           &quot;adultedu&quot;             &quot;caribbean&quot;           
-## [199] &quot;beerhall&quot;             &quot;halal&quot;                &quot;ukrainian&quot;           
-## [202] &quot;florists&quot;             &quot;themedcafes&quot;          &quot;baden&quot;               
-## [205] &quot;aquariums&quot;            &quot;knittingsupplies&quot;     &quot;baguettes&quot;           
-## [208] &quot;cuban&quot;                &quot;concept_shops&quot;        &quot;belgian&quot;             
-## [211] &quot;syrian&quot;               &quot;ethiopian&quot;            &quot;language_schools&quot;    
-## [214] &quot;cambodian&quot;            &quot;foodtrucks&quot;           &quot;scandinavian&quot;        
-## [217] &quot;markets&quot;              &quot;kids_activities&quot;      &quot;donuts&quot;              
-## [220] &quot;football&quot;             &quot;ramen&quot;                &quot;barbers&quot;             
-## [223] &quot;himalayan&quot;            &quot;printmedia&quot;           &quot;travelservices&quot;      
-## [226] &quot;realestate&quot;           &quot;elementaryschools&quot;    &quot;sharedofficespaces&quot;  
-## [229] &quot;petstore&quot;             &quot;gluten_free&quot;          &quot;artsandcrafts&quot;       
-## [232] &quot;active&quot;               &quot;social_clubs&quot;         &quot;festivals&quot;           
-## [235] &quot;highschools&quot;          &quot;eyelashservice&quot;       &quot;landscaping&quot;         
-## [238] &quot;childrensmuseums&quot;     &quot;chicken_wings&quot;        &quot;streetart&quot;           
-## [241] &quot;fashion&quot;              &quot;videoandgames&quot;        &quot;potatoes&quot;            
-## [244] &quot;skate_parks&quot;          &quot;herbsandspices&quot;       &quot;communitygardens&quot;    
-## [247] &quot;champagne_bars&quot;       &quot;pets&quot;                 &quot;nonprofit&quot;           
-## [250] &quot;fleamarkets&quot;          &quot;fondue&quot;               &quot;franconian&quot;          
-## [253] &quot;jewelry&quot;              &quot;massmedia&quot;            &quot;flatbread&quot;           
-## [256] &quot;religiousorgs&quot;        &quot;internetcafe&quot;         &quot;vintage&quot;             
-## [259] &quot;swissfood&quot;            &quot;web_design&quot;           &quot;sports_clubs&quot;        
-## [262] &quot;hungarian&quot;            &quot;tennis&quot;               &quot;afghani&quot;             
-## [265] &quot;comedyclubs&quot;          &quot;movietheaters&quot;        &quot;healthmarkets&quot;       
-## [268] &quot;shopping&quot;             &quot;laotian&quot;              &quot;backshop&quot;            
-## [271] &quot;architecturaltours&quot;   &quot;hair&quot;                 &quot;childcloth&quot;          
-## [274] &quot;candy&quot;                &quot;castles&quot;              &quot;mongolian&quot;           
-## [277] &quot;fishmonger&quot;           &quot;cajun&quot;                &quot;publictransport&quot;</code></pre>
-<pre><code>##   [1] NA                              &quot;german&quot;                       
-##   [3] &quot;restaurants&quot;                   &quot;museums&quot;                      
-##   [5] &quot;cookingschools&quot;                &quot;pizza&quot;                        
-##   [7] &quot;coffee&quot;                        &quot;bowling&quot;                      
-##   [9] &quot;breakfast_brunch&quot;              &quot;delicatessen&quot;                 
-##  [11] &quot;modern_european&quot;               &quot;catering&quot;                     
-##  [13] &quot;italian&quot;                       &quot;galleries&quot;                    
-##  [15] &quot;beergarden&quot;                    &quot;cafes&quot;                        
-##  [17] &quot;burgers&quot;                       &quot;bakeries&quot;                     
-##  [19] &quot;panasian&quot;                      &quot;salad&quot;                        
-##  [21] &quot;castles&quot;                       &quot;bedbreakfast&quot;                 
-##  [23] &quot;landmarks&quot;                     &quot;mediterranean&quot;                
-##  [25] &quot;cocktailbars&quot;                  &quot;religiousorgs&quot;                
-##  [27] &quot;vacation_rentals&quot;              &quot;greek&quot;                        
-##  [29] &quot;hotdogs&quot;                       &quot;vietnamese&quot;                   
-##  [31] &quot;seafood&quot;                       &quot;sportsbars&quot;                   
-##  [33] &quot;chinese&quot;                       &quot;parks&quot;                        
-##  [35] &quot;musicvenues&quot;                   &quot;austrian&quot;                     
-##  [37] &quot;desserts&quot;                      &quot;currysausage&quot;                 
-##  [39] &quot;cakeshop&quot;                      &quot;sushi&quot;                        
-##  [41] &quot;streetvendors&quot;                 &quot;vegetarian&quot;                   
-##  [43] &quot;bistros&quot;                       &quot;aquariums&quot;                    
-##  [45] &quot;theater&quot;                       &quot;international&quot;                
-##  [47] &quot;movietheaters&quot;                 &quot;publicplazas&quot;                 
-##  [49] &quot;importedfood&quot;                  &quot;french&quot;                       
-##  [51] &quot;hawaiian&quot;                      &quot;creperies&quot;                    
-##  [53] &quot;tapas&quot;                         &quot;coffeeroasteries&quot;             
-##  [55] &quot;tradamerican&quot;                  &quot;chocolate&quot;                    
-##  [57] &quot;tapasmallplates&quot;               &quot;thai&quot;                         
-##  [59] &quot;beer_and_wine&quot;                 &quot;russian&quot;                      
-##  [61] &quot;nightlife&quot;                     &quot;danceclubs&quot;                   
-##  [63] &quot;localflavor&quot;                   &quot;bars&quot;                         
-##  [65] &quot;poolhalls&quot;                     &quot;artsandcrafts&quot;                
-##  [67] &quot;indpak&quot;                        &quot;pretzels&quot;                     
-##  [69] &quot;turkish&quot;                       &quot;lakes&quot;                        
-##  [71] &quot;icecream&quot;                      &quot;singaporean&quot;                  
-##  [73] &quot;soup&quot;                          &quot;venues&quot;                       
-##  [75] &quot;wine_bars&quot;                     &quot;kebab&quot;                        
-##  [77] &quot;bulgarian&quot;                     &quot;serbocroatian&quot;                
-##  [79] &quot;argentine&quot;                     &quot;mexican&quot;                      
-##  [81] &quot;bavarian&quot;                      &quot;oriental&quot;                     
-##  [83] &quot;arcades&quot;                       &quot;lounges&quot;                      
-##  [85] &quot;hotels&quot;                        &quot;churches&quot;                     
-##  [87] &quot;fooddeliveryservices&quot;          &quot;gastropubs&quot;                   
-##  [89] &quot;portuguese&quot;                    &quot;juicebars&quot;                    
-##  [91] &quot;publictransport&quot;               &quot;social_clubs&quot;                 
-##  [93] &quot;sports_clubs&quot;                  &quot;beaches&quot;                      
-##  [95] &quot;chicken_wings&quot;                 &quot;steak&quot;                        
-##  [97] &quot;ukrainian&quot;                     &quot;irish_pubs&quot;                   
-##  [99] &quot;dog_parks&quot;                     &quot;foodtrucks&quot;                   
-## [101] &quot;grocery&quot;                       &quot;gaybars&quot;                      
-## [103] &quot;arabian&quot;                       &quot;asianfusion&quot;                  
-## [105] &quot;foodstands&quot;                    &quot;himalayan&quot;                    
-## [107] &quot;sandwiches&quot;                    &quot;shopping&quot;                     
-## [109] &quot;organic_stores&quot;                &quot;beerhall&quot;                     
-## [111] &quot;buffets&quot;                       &quot;herbsandspices&quot;               
-## [113] &quot;arts&quot;                          &quot;swissfood&quot;                    
-## [115] &quot;travelagents&quot;                  &quot;generalfestivals&quot;             
-## [117] &quot;mongolian&quot;                     &quot;pubs&quot;                         
-## [119] &quot;convenience&quot;                   &quot;spanish&quot;                      
-## [121] &quot;divebars&quot;                      &quot;easterngerman&quot;                
-## [123] &quot;canteen&quot;                       &quot;bagels&quot;                       
-## [125] &quot;homeappliancerepair&quot;           &quot;coffeeteasupplies&quot;            
-## [127] &quot;gourmet&quot;                       &quot;kids_activities&quot;              
-## [129] &quot;fishmonger&quot;                    &quot;guesthouses&quot;                  
-## [131] &quot;chickenshop&quot;                   &quot;vegan&quot;                        
-## [133] &quot;jazzandblues&quot;                  &quot;beerbar&quot;                      
-## [135] &quot;themedcafes&quot;                   &quot;lebanese&quot;                     
-## [137] &quot;intlgrocery&quot;                   &quot;diners&quot;                       
-## [139] &quot;moroccan&quot;                      &quot;afghani&quot;                      
-## [141] &quot;falafel&quot;                       &quot;hotdog&quot;                       
-## [143] &quot;bubbletea&quot;                     &quot;bbq&quot;                          
-## [145] &quot;tea&quot;                           &quot;whiskeybars&quot;                  
-## [147] &quot;cupcakes&quot;                      &quot;healthmarkets&quot;                
-## [149] &quot;japanese&quot;                      &quot;tex-mex&quot;                      
-## [151] &quot;baden&quot;                         &quot;womenscloth&quot;                  
-## [153] &quot;food&quot;                          &quot;massage&quot;                      
-## [155] &quot;waffles&quot;                       &quot;streetart&quot;                    
-## [157] &quot;indoor_playcenter&quot;             &quot;pakistani&quot;                    
-## [159] &quot;bookstores&quot;                    &quot;mideastern&quot;                   
-## [161] &quot;gluten_free&quot;                   &quot;meats&quot;                        
-## [163] &quot;baguettes&quot;                     &quot;cypriot&quot;                      
-## [165] &quot;korean&quot;                        &quot;brasseries&quot;                   
-## [167] &quot;schnitzel&quot;                     &quot;champagne_bars&quot;               
-## [169] &quot;lawyers&quot;                       &quot;hookah_bars&quot;                  
-## [171] &quot;education&quot;                     &quot;romanian&quot;                     
-## [173] &quot;golf&quot;                          &quot;appliances&quot;                   
-## [175] &quot;nonprofit&quot;                     &quot;mediators&quot;                    
-## [177] &quot;eltern_cafes&quot;                  &quot;candy&quot;                        
-## [179] &quot;peruvian&quot;                      &quot;flatbread&quot;                    
-## [181] &quot;playgrounds&quot;                   &quot;souvenirs&quot;                    
-## [183] &quot;concept_shops&quot;                 &quot;publicservicesgovt&quot;           
-## [185] &quot;tableware&quot;                     &quot;polish&quot;                       
-## [187] &quot;halal&quot;                         &quot;tobaccoshops&quot;                 
-## [189] &quot;florists&quot;                      &quot;caribbean&quot;                    
-## [191] &quot;boatcharters&quot;                  &quot;townhall&quot;                     
-## [193] &quot;kosher&quot;                        &quot;israeli&quot;                      
-## [195] &quot;wok&quot;                           &quot;fishnchips&quot;                   
-## [197] &quot;tattoo&quot;                        &quot;delis&quot;                        
-## [199] &quot;musicians&quot;                     &quot;adultedu&quot;                     
-## [201] &quot;kiosk&quot;                         &quot;courthouses&quot;                  
-## [203] &quot;taiwanese&quot;                     &quot;irish&quot;                        
-## [205] &quot;tours&quot;                         &quot;funeralservices&quot;              
-## [207] &quot;scandinavian&quot;                  &quot;beachvolleyball&quot;              
-## [209] &quot;shoppingcenters&quot;               &quot;australian&quot;                   
-## [211] &quot;amusementparks&quot;                &quot;libraries&quot;                    
-## [213] &quot;beachbars&quot;                     &quot;musicalinstrumentsandteachers&quot;
-## [215] &quot;breweries&quot;                     &quot;artmuseums&quot;                   
-## [217] &quot;potatoes&quot;                      &quot;bikes&quot;                        
-## [219] &quot;embassy&quot;                       &quot;backshop&quot;                     
-## [221] &quot;gardens&quot;                       &quot;bartendingschools&quot;            
-## [223] &quot;sharedofficespaces&quot;            &quot;marketstalls&quot;                 
-## [225] &quot;african&quot;                       &quot;antiques&quot;                     
-## [227] &quot;tastingclasses&quot;                &quot;jewelry&quot;                      
-## [229] &quot;swabian&quot;                       &quot;elementaryschools&quot;            
-## [231] &quot;wineries&quot;                      &quot;syrian&quot;                       
-## [233] &quot;swimmingpools&quot;                 &quot;pettingzoos&quot;                  
-## [235] &quot;pensions&quot;                      &quot;giftshops&quot;                    
-## [237] &quot;laundromat&quot;                    &quot;auto&quot;                         
-## [239] &quot;summer_camps&quot;                  &quot;localservices&quot;                
-## [241] &quot;latin&quot;                         &quot;fashion&quot;                      
-## [243] &quot;karaoke&quot;                       &quot;hungarian&quot;                    
-## [245] &quot;hiking&quot;                        &quot;ethiopian&quot;                    
-## [247] &quot;indonesian&quot;                    &quot;tennis&quot;                       
-## [249] &quot;psychic_astrology&quot;             &quot;yoga&quot;                         
-## [251] &quot;printmedia&quot;                    &quot;comedyclubs&quot;                  
-## [253] &quot;stationery&quot;                    &quot;farmersmarket&quot;                
-## [255] &quot;brazilian&quot;                     &quot;active&quot;                       
-## [257] &quot;laundryservices&quot;               &quot;tabletopgames&quot;                
-## [259] &quot;srilankan&quot;                     &quot;vintage&quot;                      
-## [261] &quot;hostels&quot;                       &quot;videoandgames&quot;                
-## [263] &quot;health&quot;                        &quot;fischbroetchen&quot;               
-## [265] &quot;fishing&quot;                       &quot;seafoodmarkets&quot;</code></pre>
-<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Intro here.</p>
+<div id="some-demographics" class="section level2">
+<h2>Some Demographics</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_population_density-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_foreign_residents-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_average_age-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_political_parties-1.png" width="624" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_afd_representation-1.png" width="672" /></p>
+</div>
+<div id="characterizing-berlin-districts-through-yelp-reviews" class="section level2">
+<h2>Characterizing Berlin Districts Through Yelp Reviews</h2>
+<p>First, a glimpse of the data.</p>
+<pre><code>## Observations: 16,061
+## Variables: 12
+## $ id                    &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF...
+## $ name                  &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ...
+## $ review_count          &lt;int&gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1...
+## $ categories.title      &lt;chr&gt; &quot;Bistros&quot;, &quot;Landmarks &amp; Historical Build...
+## $ rating                &lt;dbl&gt; 4.0, 4.5, 3.5, 5.0, 5.0, 5.0, 5.0, 3.0, ...
+## $ coordinates.latitude  &lt;dbl&gt; 52.40460, 52.41351, 52.41455, 52.41423, ...
+## $ coordinates.longitude &lt;dbl&gt; 13.06500, 13.09074, 13.09483, 13.09314, ...
+## $ location.city         &lt;chr&gt; &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, ...
+## $ location.zip_code     &lt;int&gt; 10783, 14109, 14109, 14109, 14109, 14109...
+## $ location.state        &lt;chr&gt; &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;...
+## $ price                 &lt;chr&gt; NA, NA, &quot;€€€&quot;, NA, NA, NA, NA, &quot;€€&quot;, NA,...
+## $ district              &lt;chr&gt; &quot;Tempelhof-Schöneberg&quot;, &quot;Steglitz-Zehlen...</code></pre>
+<p>Although the total number of observations from the dataset is 16061, the total number of businesses is actually 10715. The remaining 5346 observations are duplicates</p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_all_businesses_berlin-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_most_reviewed_berlin-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="friedrichshain-kreuzberg" class="section level2">
+<h2>Friedrichshain-Kreuzberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_friedrichshain_kreuzberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_10_friedrichshain_kreuzberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="mitte" class="section level2">
+<h2>Mitte</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_mitte-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="charlottenburg-wilmersdorf" class="section level2">
+<h2>Charlottenburg-Wilmersdorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_charlottenburg_wilmersdorf-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="steglitz-zehlendorf" class="section level2">
+<h2>Steglitz-Zehlendorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_steglitz_zehlendorf-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="tempelhof-schoneberg" class="section level2">
+<h2>Tempelhof-Schöneberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_tempelhof_scho%CC%88neberg-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="neukolln" class="section level2">
+<h2>Neukölln</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_neukoelln-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="treptow-kopenick" class="section level2">
+<h2>Treptow-Köpenick</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_treptow_koepenick-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="marzahn-hellersdorf" class="section level2">
+<h2>Marzahn-Hellersdorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_marzahn_hellersdorf-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="lichtenberg" class="section level2">
+<h2>Lichtenberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_lichtenberg-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="pankow" class="section level2">
+<h2>Pankow</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_pankow-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="reinickendorf" class="section level2">
+<h2>Reinickendorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_reinikendorf-1.png" width="240" /></p>
+<p><br></p>
+</div>
+<div id="spandau" class="section level2">
+<h2>Spandau</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_spandau-1.png" width="240" /></p>
+</div>

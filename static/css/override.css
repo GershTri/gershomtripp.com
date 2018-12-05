@@ -59,3 +59,7 @@ section.main .content .markdown ol {
 .mi, .mo {
   color: #111;
 }
+th {
+  font-weight: bolder;
+  font-size: 1.2em;
+}

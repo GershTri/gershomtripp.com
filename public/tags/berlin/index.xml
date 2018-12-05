@@ -17,8 +17,9 @@
       <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/blog/a-tale-of-one-more-city/</guid>
-      <description>Bit’o’code to turn nested list into data frame.
-yelp_df_all &amp;lt;- lapply(all_businesses_list, unlist) %&amp;gt;% lapply(., as.list) %&amp;gt;% lapply(., as.data.frame, stringsAsFactors = F) %&amp;gt;% bind_rows() ## Observations: 11,153 ## Variables: 31 ## $ id &amp;lt;chr&amp;gt; &amp;quot;OCPzx3gU8JkiJ1laTcpy7g&amp;quot;, &amp;quot;J8uT9qybm... ## $ alias &amp;lt;chr&amp;gt; &amp;quot;strandbad-werder-mario-müller-werde... ## $ name &amp;lt;chr&amp;gt; &amp;quot;Strandbad Werder Mario Müller&amp;quot;, &amp;quot;La... ## $ image_url &amp;lt;chr&amp;gt; &amp;quot;&amp;quot;, &amp;quot;https://s3-media3.fl.yelpcdn.co... ## $ is_closed &amp;lt;chr&amp;gt; &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, &amp;quot;FALSE&amp;quot;, ... ## $ url &amp;lt;chr&amp;gt; &amp;quot;https://www.yelp.com/biz/strandbad-... ## $ review_count &amp;lt;dbl&amp;gt; 1, 1, 6, 11, 21, 3, 3, 1, 8, 11, 4, .</description>
+      <description>Intro here.
+Some Demographics  Characterizing Berlin Districts Through Yelp Reviews First, a glimpse of the data.
+## Observations: 16,061 ## Variables: 12 ## $ id &amp;lt;chr&amp;gt; &amp;quot;d0NEZdBlNt1EAZ3oRT2Osg&amp;quot;, &amp;quot;yMz08uk3Q7UjF... ## $ name &amp;lt;chr&amp;gt; &amp;quot;Endlich&amp;quot;, &amp;quot;Glienicker Brücke&amp;quot;, &amp;quot;Lutter ... ## $ review_count &amp;lt;int&amp;gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1... ## $ categories.title &amp;lt;chr&amp;gt; &amp;quot;Bistros&amp;quot;, &amp;quot;Landmarks &amp;amp; Historical Build... ## $ rating &amp;lt;dbl&amp;gt; 4.0, 4.5, 3.</description>
     </item>
     
     <item>
