@@ -262,7 +262,7 @@ remaining `r nrow(yelp_df) - length(unique(yelp_df$id))` observations are duplic
 
 ```{r plot_all_businesses_berlin, message=FALSE, warning=FALSE}
 berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8000, top = 52.6918)
-berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-lite")
+berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-background", darken = .8)
 
 berlin_map %>% 
     ggmap() + 
@@ -277,6 +277,37 @@ berlin_map %>%
           axis.ticks = element_blank(),
           plot.title = element_text(hjust = 0.5)
           )
+
+berlin_map %>% 
+    ggmap() + 
+    geom_point(data = yelp_df %>%
+                   select(id, coordinates.latitude, coordinates.longitude) %>% 
+                   distinct(),
+               aes(coordinates.longitude, coordinates.latitude),
+               color = "red", size = 0.1, alpha = .1) + 
+    ggtitle("Distribution of All Yelp-Reviewed Businesses") + 
+    theme(axis.text = element_blank(),
+          axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5)
+          )
+```
+```{r}
+ggplot(yelp_df %>% select(id, coordinates.latitude, coordinates.longitude, district) %>% 
+                   distinct()) +
+    geom_point(aes(coordinates.longitude, coordinates.latitude, color = district),
+               size = 0.1, alpha = .3) + 
+    coord_fixed(1.7) +
+    ggtitle("Distribution of All Yelp-Reviewed Businesses") + 
+    theme(axis.text = element_blank(),
+          axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid = element_blank(),
+          legend.position = "none",
+          panel.background = element_rect(fill = "black"),
+          plot.title = element_text(hjust = 0.5)
+          )
+
 ```
 
 ```{r plot_30_most_reviewed_berlin}
@@ -306,6 +337,29 @@ yelp_df %>%
 
 
 
+```{r}
+a_df <- tribble(
+    ~cat, ~nc, ~nd,
+    "c1", 10,   3,
+    "c2", 20,   2,
+    "c3", 30,   5,
+    "c4", 40,   2,
+    "c5", 50,   9,
+    "c6", 60,   4,
+    "c7", 70,   22,
+    "c8", 80,   4,
+    "c9", 90,   0
+)
+
+test_df <- a_df %>% 
+    mutate(r_cmplx = (nd/nc) * (sum(nc)/sum(nd)),
+           r_cmplx_noconst = nd/nc,
+           r_diff = (nd/sum(nd)) - (nc/sum(nc))
+           )
+
+test_df %>% arrange(r_cmplx)
+test_df %>% arrange(r_diff)
+```
 
 
 
