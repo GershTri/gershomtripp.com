@@ -299,6 +299,7 @@ berlin_map %>%
 ```
 
 ```{r plot_30_most_reviewed_berlin}
+#
 yelp_df %>% 
     group_by(categories.title) %>% 
     count() %>% 
@@ -312,19 +313,34 @@ yelp_df %>%
                              )
            ) %>% 
     ggplot(aes(y = Category, x = Count)) +
-    geom_point(shape = 21, fill = "lightblue") + 
-    scale_x_continuous(breaks = seq(100, 1500, 200)) +
+    geom_point(shape = 21, fill = "lightblue", size = 2) + 
+    scale_x_continuous(breaks = seq(100, 1700, 200)) +
     theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank()
           ) + 
     ggtitle("Thirty Categories with the Most Yelp Listings")
-
+```
+```{r}
+# 
 yelp_df %>% 
     arrange(desc(review_count)) %>%
     select(-categories.title) %>% 
-    distinct()
+    distinct() %>% 
+    head(30) %>% 
+    mutate(name = ordered(name, levels = rev(.$name))) %>%
+    ggplot(aes(y = name, x = review_count)) +
+    geom_point(shape = 21, fill = "salmon", size = 2) + 
+    scale_x_continuous(breaks = seq(250, 1000, 150)) +
+    theme_minimal() +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_blank()
+          ) +
+    xlab("Number of Reviews") +
+    ggtitle("Thirty Restaurants with the Most Yelp Reviews")
+
 
 ```
 
@@ -424,6 +440,20 @@ ggplot(sf_districts) +
 
 
 ```{r set_up_functions_for_district_analysis, message=FALSE, warning=FALSE}
+city_summary <- yelp_df %>% 
+    group_by(categories.title) %>% 
+    summarise(cat_tot_city = n()) %>% 
+    mutate(bus_tot_city = length(unique(yelp_df$id)),
+           preval_city = round(cat_tot_city/nrow(yelp_df), 2)) %>% 
+    arrange(desc(preval_city))
+
+
+yelp_df %>% 
+    group_by(district, categories.title) %>% 
+    summarise(cat_tot_dist = n()) %>% 
+    mutate(bus_tot_dist = length(unique(yelp_df$id)),
+           preval_dist = round(cat_tot_city/nrow(yelp_df), 2)) %>% 
+    arrange(desc(preval_c))
 
 ```
 
