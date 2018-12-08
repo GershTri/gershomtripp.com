@@ -1,25 +1,6 @@
-hugoBasicExample
+gershomtripp.com
 ==========
 
-This is an example site for [Hugo](https://gohugo.io/).
+This is where versions of my website live before they are uploaded to Dreamhost. Check out [gershomtripp.com](http://www.gershomtripp.com/) to see what my site looks like.
 
-It is intended to be a demo site for the various [Hugo themes][].
-
-# Using
-
-1. First, [install Hugo](https://gohugo.io/overview/installing/);
-2. Then, clone this repository;
-3. Clone the [Hugo themes][];
-4. Run Hugo and select the theme of your choosing.
-
-In other words:
-
-<pre><code>git clone https://github.com/spf13/HugoBasicExample.git
-cd HugoBasicExample
-git clone --recursive https://github.com/spf13/hugoThemes.git themes
-hugo server -t <em>themename</em>
-</code></pre>
-
-Enjoy!
-
-[Hugo themes]: https://github.com/spf13/hugoThemes
+Blogposts, rmarkdown, etc. can be found in [content/blog/](https://github.com/GershTri/gershomtripp.com/tree/master/content/blog). I've excluded datasets because some are quite large, and some are not mine and the orginal source might disapprove of sharing. However, for the sake of replication many sources are downloaded as needed directly in the script. You are welcome to use these.
