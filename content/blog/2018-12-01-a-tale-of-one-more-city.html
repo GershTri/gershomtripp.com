@@ -25,7 +25,7 @@ slug: a-tale-of-one-more-city
 <div id="characterizing-berlin-districts-through-yelp-reviews" class="section level2">
 <h2>Characterizing Berlin Districts Through Yelp Reviews</h2>
 <p>First, a glimpse of the data.</p>
-<pre><code>## Observations: 16,061
+<pre><code>## Observations: 17,976
 ## Variables: 12
 ## $ id                    &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF...
 ## $ name                  &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ...
@@ -39,68 +39,102 @@ slug: a-tale-of-one-more-city
 ## $ location.state        &lt;chr&gt; &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;...
 ## $ price                 &lt;chr&gt; NA, NA, &quot;€€€&quot;, NA, NA, NA, NA, &quot;€€&quot;, NA,...
 ## $ district              &lt;chr&gt; &quot;Tempelhof-Schöneberg&quot;, &quot;Steglitz-Zehlen...</code></pre>
-<p>Although the total number of observations from the dataset is 16061, the total number of businesses is actually 10715. The remaining 5346 observations are duplicates</p>
-<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_all_businesses_berlin-1.png" width="672" /></p>
-<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_most_reviewed_berlin-1.png" width="672" /></p>
+<p>Although the total number of observations from the dataset is 17976, the total number of businesses is actually 11989. The remaining 5987 observations are duplicates.</p>
+<p>A dot density plot can give us some perspective on the distribution of Yelp-reviewed businesses.</p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_dot_density_all_businesses-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_most_reviewed_berlin-1.png" width="672" /> <img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_businesses_with_most_reviews-1.png" width="672" /></p>
+<pre><code>## # A tibble: 9 x 9
+##   cat   cat_city cat_dist   inc inc_nocon  diff inc_r inc_nocon_r diff_r
+##   &lt;chr&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;       &lt;int&gt;  &lt;int&gt;
+## 1 c7          70       22 2.72       0.31  0.27     1           1      1
+## 2 c5          50        9 1.56       0.18  0.06     3           3      2
+## 3 c1          10        3 2.6        0.3   0.04     2           2      3
+## 4 c3          30        5 1.44       0.17  0.03     4           4      4
+## 5 c2          20        2 0.87       0.1  -0.01     5           5      5
+## 6 c4          40        2 0.43       0.05 -0.05     7           7      6
+## 7 c6          60        4 0.580      0.07 -0.06     6           6      7
+## 8 c8          80        4 0.43       0.05 -0.1      8           8      8
+## 9 c9          90        1 0.1        0.01 -0.18     9           9      9</code></pre>
+<p>I have a couple of quibbles regarding the use of the “incidence rate” by Katie Hempenius, and later used by Ilia Blinderman and Amber Thomas. Katie arrives at an equation with two goals in mind: “1. identify interesting trends and 2. normalize for the effects of commercial versus residential usage”. She <a href="https://katiehempenius.com/post/yelp-map-of-san-francisco/">defines</a> it thusly:</p>
+<p><span class="math display">\[
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
+\frac{Businesses\;in\;city}{Businesses\;in\;zip}
+\]</span></p>
+<p>All of this is well-argued and perfectly reasonable, and I do believe their results reflect the character of the neighborhoods they are analyzing, to a degree. That said, there are a few issues - one major, one minor, and one somewhere in between - that are worth discussing.</p>
+<p>Fortunately, the major issue is also the easiest to address. Simply put, the above equation does not describe the <a href="https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html"><em>incidence rate</em></a>. The incidence rate is a measure of <em>new cases</em> in a specified period of time, but time doesn’t play a role at all in our simple analysis of existent businesses.</p>
+<p>A more appropriate measure might be <em>prevalence</em> (also described the CDC self-study course linked above), which is</p>
+<p>I think most of the confusion here stems from the fact that specific epidemiological terminology is being used in a context where an epidemological approach is perfectly valid, but how the terminology is being used isn’t quite right.</p>
+<p>Using the proportion <code>category in district/category in city</code> can be misleading.</p>
 <p><br></p>
 </div>
 <div id="friedrichshain-kreuzberg" class="section level2">
 <h2>Friedrichshain-Kreuzberg</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_friedrichshain_kreuzberg-1.png" width="240" /></p>
-<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_10_friedrichshain_kreuzberg-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_friedrichshain_kreuzberg-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="mitte" class="section level2">
 <h2>Mitte</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_mitte-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_mitte-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="charlottenburg-wilmersdorf" class="section level2">
 <h2>Charlottenburg-Wilmersdorf</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_charlottenburg_wilmersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_charlottenburg_wilmersdorf-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="steglitz-zehlendorf" class="section level2">
 <h2>Steglitz-Zehlendorf</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_steglitz_zehlendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_steglitz_zehlendorf-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="tempelhof-schoneberg" class="section level2">
 <h2>Tempelhof-Schöneberg</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_tempelhof_scho%CC%88neberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_tempelhof_scho%CC%88neberg-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="neukolln" class="section level2">
 <h2>Neukölln</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_neukoelln-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_neukoelln-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="treptow-kopenick" class="section level2">
 <h2>Treptow-Köpenick</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_treptow_koepenick-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_treptow_koepenick-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="marzahn-hellersdorf" class="section level2">
 <h2>Marzahn-Hellersdorf</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_marzahn_hellersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_marzahn_hellersdorf-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="lichtenberg" class="section level2">
 <h2>Lichtenberg</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_lichtenberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_lichtenberg-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="pankow" class="section level2">
 <h2>Pankow</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_pankow-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_pankow-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="reinickendorf" class="section level2">
 <h2>Reinickendorf</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_reinikendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_reinikendorf-1.png" width="672" /></p>
 <p><br></p>
 </div>
 <div id="spandau" class="section level2">
 <h2>Spandau</h2>
 <p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_spandau-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_spandau-1.png" width="672" /></p>
 </div>

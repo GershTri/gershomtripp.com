@@ -322,7 +322,7 @@ yelp_df %>%
           ) + 
     ggtitle("Thirty Categories with the Most Yelp Listings")
 ```
-```{r}
+```{r plot_30_businesses_with_most_reviews}
 # 
 yelp_df %>% 
     arrange(desc(review_count)) %>%
@@ -339,7 +339,7 @@ yelp_df %>%
           axis.title.y = element_blank()
           ) +
     xlab("Number of Reviews") +
-    ggtitle("Thirty Restaurants with the Most Yelp Reviews")
+    ggtitle("Thirty Businesses with the Most Yelp Reviews")
 
 
 ```
@@ -439,54 +439,81 @@ ggplot(sf_districts) +
 ```
 
 
-```{r set_up_functions_for_district_analysis, message=FALSE, warning=FALSE}
+```{r set_up_dataframe_of_prevalence_diffs, message=FALSE, warning=FALSE}
 city_summary <- yelp_df %>% 
     group_by(categories.title) %>% 
     summarise(cat_tot_city = n()) %>% 
     mutate(bus_tot_city = length(unique(yelp_df$id)),
-           preval_city = round(cat_tot_city/nrow(yelp_df), 2)) %>% 
+           preval_city = cat_tot_city/nrow(yelp_df)) %>% 
     arrange(desc(preval_city))
 
 
-yelp_df %>% 
+dist_summary <- yelp_df %>% 
     group_by(district, categories.title) %>% 
-    summarise(cat_tot_dist = n()) %>% 
-    mutate(bus_tot_dist = length(unique(yelp_df$id)),
-           preval_dist = round(cat_tot_city/nrow(yelp_df), 2)) %>% 
-    arrange(desc(preval_c))
+    count() %>%
+    full_join(yelp_df %>% group_by(district) %>% count(), by = "district") %>% 
+    rename(cat_tot_dist = n.x, bus_tot_dist = n.y) %>% 
+    mutate(preval_dist = cat_tot_dist/bus_tot_dist) %>% 
+    arrange(district, desc(preval_dist))
+
+diff_df <- full_join(dist_summary, city_summary, by = "categories.title") %>% 
+    mutate(preval_diff = preval_dist - preval_city) %>% 
+    arrange(district, desc(preval_diff))
+```
+
+```{r write_plot_district_function}
+plot_district <- function(district_name, coords) {
+    
+    dist_diff_df <- diff_df %>% 
+        filter(district == district_name) %>% 
+        head(6)
+    
+    dist_df <- yelp_df %>% 
+        filter(district == district_name,
+               categories.title %in% dist_diff_df$categories.title
+               ) %>% 
+        mutate(categories.title = ordered(categories.title,
+                                          levels = dist_diff_df$categories.title
+                                          )
+               )
+    
+    coords_df <- tibble(lon = coords[c("top", "bottom")],
+                        lat = coords[c("right", "left")]
+                        )
+    
+    qmplot(data = coords_df,
+           x = lat,
+           y = lon,
+           maptype = "terrain",
+           geom = "blank"
+           ) +
+        geom_point(data = dist_df, 
+                   aes(x = coordinates.longitude,
+                       y = coordinates.latitude,
+                       shape = I(21),
+                       fill = I("red"),
+                       size = review_count,
+                       alpha = .5
+
+                       ),
+                   ) +
+        facet_wrap(~ categories.title, ncol = 2) +
+        theme_minimal() +
+        theme(axis.title = element_blank(),
+              axis.text = element_blank(),
+              axis.ticks = element_blank(),
+              strip.text = element_text(size=12),
+              legend.position = "none"
+              )
+}
 
 ```
 
-```{r plot_top_10_friedrichshain_kreuzberg, warning=F, message=F, fig.height=8}
-district_name <- "Friedrichshain-Kreuzberg"
+```{r plot_top_6_friedrichshain_kreuzberg, warning=F, message=F, fig.height=8}
 
-fried_kreuz_df <- get_unique_businesses(district_name)
-fried_kreuz_df_incid <- get_unique_businesses_incid(district_name)
+coords <- c(top = 52.5193, right = 13.4677, bottom = 52.4730, left = 13.3535)
+plot_district("Friedrichshain-Kreuzberg", coords = coords)
 
-fried_kreuz_df
-fried_kreuz_df_incid
-
-fried_kreuz_df <- yelp_df %>%
-    filter(district == district_name, categories.title %in% fried_kreuz_ord) %>% 
-    mutate(categories.title = factor(categories.title,
-                                     ordered = T,
-                                     levels = levels(fried_kreuz_ord)
-                                     )
-           )
-
-qmplot(data = fried_kreuz_df,
-       x = coordinates.longitude,
-       y = coordinates.latitude,
-       maptype = "toner-lite",
-       color = I("red"),
-       size = I(1)
-       ) + 
-    facet_wrap(~ categories.title, ncol = 3) +
-    theme_minimal() +
-    theme(axis.title = element_blank(),
-          axis.text = element_blank(),
-          axis.ticks = element_blank()
-          )
 ```
 
 
@@ -515,6 +542,16 @@ ggplot(sf_districts) +
 ```
 
 
+```{r plot_top_6_mitte, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5794, right = 13.4797, bottom = 52.4870, left = 13.2514)
+plot_district("Mitte", coords = coords)
+
+```
+
+
+
+
 
 
 
@@ -537,6 +574,15 @@ ggplot(sf_districts) +
         axis.text = element_blank(),
         axis.ticks = element_blank()
     )
+```
+
+
+
+```{r plot_top_6_charlottenburg_wilmersdorf, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5542, right = 13.3781, bottom = 52.4618, left = 13.1498)
+plot_district("Charlottenburg-Wilmersdorf", coords = coords)
+
 ```
 
 
@@ -565,6 +611,13 @@ ggplot(sf_districts) +
 ```
 
 
+```{r plot_top_6_steglitz_zehlendorf, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5221, right = 13.4583, bottom = 52.3368, left = 13.0016)
+plot_district("Steglitz-Zehlendorf", coords = coords)
+
+```
+
 
 
 
@@ -588,6 +641,15 @@ ggplot(sf_districts) +
         axis.ticks = element_blank()
     )
 ```
+
+```{r plot_top_6_tempelhof_schöneberg, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5329, right = 13.6021, bottom = 52.3477, left = 13.1455)
+plot_district("Tempelhof-Schöneberg", coords = coords)
+
+```
+
+
 
 
 
@@ -614,6 +676,12 @@ ggplot(sf_districts) +
     )
 ```
 
+```{r plot_top_6_neukoelln, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5384, right = 13.6903, bottom = 52.3532, left = 13.2337)
+plot_district("Neukölln", coords = coords)
+
+```
 
 
 
@@ -639,6 +707,12 @@ ggplot(sf_districts) +
     )
 ```
 
+```{r plot_top_6_treptow_koepenick, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.5108, right = 13.8287, bottom = 52.3255, left = 13.3721)
+plot_district("Treptow-Köpenick", coords = coords)
+
+```
 
 
 
@@ -662,6 +736,13 @@ ggplot(sf_districts) +
         axis.text = element_blank(),
         axis.ticks = element_blank()
     )
+```
+
+```{r plot_top_6_marzahn_hellersdorf, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.6147, right = 13.8160, bottom = 52.4299, left = 13.3594)
+plot_district("Marzahn-Hellersdorf", coords = coords)
+
 ```
 
 
@@ -689,7 +770,12 @@ ggplot(sf_districts) +
     )
 ```
 
+```{r plot_top_6_lichtenberg, warning=F, message=F, fig.height=8}
 
+coords <- c(top = 52.6243, right = 13.7401, bottom = 52.4395, left = 13.2835)
+plot_district("Lichtenberg", coords = coords)
+
+```
 
 
 
@@ -712,6 +798,13 @@ ggplot(sf_districts) +
         axis.text = element_blank(),
         axis.ticks = element_blank()
     )
+```
+
+```{r plot_top_6_pankow, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.6899, right = 13.6636, bottom = 52.5054, left = 13.2069)
+plot_district("Pankow", coords = coords)
+
 ```
 
 
@@ -739,6 +832,12 @@ ggplot(sf_districts) +
     )
 ```
 
+```{r plot_top_6_reinikendorf, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.6970, right = 13.5238, bottom = 52.5125, left = 13.0672)
+plot_district("Reinickendorf", coords = coords)
+
+```
 
 
 
@@ -762,4 +861,11 @@ ggplot(sf_districts) +
         axis.text = element_blank(),
         axis.ticks = element_blank()
     )
+```
+
+```{r plot_top_6_spandau, warning=F, message=F, fig.height=8}
+
+coords <- c(top = 52.6118, right = 13.4243, bottom = 52.4269, left = 12.9676)
+plot_district("Spandau", coords = coords)
+
 ```
