@@ -22,6 +22,8 @@ library(maps)
 library(mapdata)
 library(ggstance)
 library(gridExtra)
+library(readr)
+library(httr)
 ```
 
 
@@ -322,6 +324,8 @@ yelp_df %>%
           ) + 
     ggtitle("Thirty Categories with the Most Yelp Listings")
 ```
+
+
 ```{r plot_30_businesses_with_most_reviews}
 # 
 yelp_df %>% 
@@ -344,60 +348,43 @@ yelp_df %>%
 
 ```
 
+## Excursus: Deciding on a Metric
 
-
-
-```{r test_incidence_rate}
-a_df <- tribble(
-    ~cat,   ~cat_city,       ~cat_dist,
-    "c1",          10,               3,
-    "c2",          20,               2,
-    "c3",          30,               5,
-    "c4",          40,               2,
-    "c5",          50,               9,
-    "c6",          60,               4,
-    "c7",          70,              22,
-    "c8",          80,               4,
-    "c9",          90,               1
-)
-
-test_df <- a_df %>% 
-    mutate(inc = round((cat_dist/cat_city) * 
-                               (sum(cat_city)/sum(cat_dist)), 2),
-           inc_nocon = round(cat_dist/cat_city, 2),
-           diff = round((cat_dist/sum(cat_dist)) -
-                              (cat_city/sum(cat_city)), 2)
-           )
-
-test_df %>%
-    arrange(desc(inc)) %>% 
-    mutate(inc_r = 1:9) %>% 
-    arrange(desc(inc_nocon)) %>% 
-    mutate(inc_nocon_r = 1:9) %>%
-    arrange(desc(diff)) %>% 
-    mutate(diff_r = 1:9)
-```
-
-I have a couple of quibbles regarding the use of the "incidence rate" by Katie
-Hempenius, and later used by Ilia Blinderman and Amber Thomas. Katie arrives at an
-equation with two goals in mind: "1. identify interesting trends and 2. normalize
-for the effects of commercial versus residential usage". She 
-[defines](https://katiehempenius.com/post/yelp-map-of-san-francisco/) it thusly:
+Ilia Blinderman and Amber Thomas [draw](https://pudding.cool/2018/03/neighborhoods/) on Katie Hempenius' reasoning in her [analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San Francisco's neighborhoods. With the dual goals of "identify[ing] interesting trends" and "normaliz[ing] for the effects of commercial versus residential usage" in mind, Katie arrives at the following formula for "incidence rate":
 
 $$
 X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
 \frac{Businesses\;in\;city}{Businesses\;in\;zip}
 $$
 
-All of this is well-argued and perfectly reasonable, and I do believe their
-results reflect the character of the neighborhoods they are analyzing, to a degree.
-That said, there are a few issues - one major, one minor, and one somewhere in
-between - that are worth discussing.
+I have a number of problems with this metric, ranging from major to minor.
 
-Fortunately, the major issue is also the easiest to address. Simply put, the
-above equation does not describe the [_incidence rate_](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html). The incidence rate is a measure of _new cases_ in a specified period of time, but time doesn't play a role at all in our simple analysis of existent businesses. 
+Fortunately, the biggest issue is also the easiest to address. Simply put, the
+above formula does _not_ describe the incidence rate. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a measure of _new cases_ in a specified period of _time_. Time, however, doesn't play
+a role in the Katie's formula. Instead, the formula describes the proportion of all category members that can be found in a given district, multiplied by a constant.
 
-A more appropriate measure might be _prevalence_ (also described the CDC self-study course linked above), which is 
+Less of an issue, but perhaps relevant in terms of computational resources, is
+the fact that the second half of the equation - the constant - scales all the proporitions upwards without actually changing the relationships between them.
+That is to say, it has no effect on the neighborhood-level rankings, which is 
+what we are interested in. A simplified formula will produce the same results:
+
+$$
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
+$$
+
+As a virtuous programmer (I try 🤷) I'll attempt to zero in on a good solution
+via edge cases, which I can formulate in a series of what-ifs:
+
+What if…
+
+1. a neighborhood is home to a category whose members make up less than 1% of all categories, but draws a disproportionate amount of interest, as measured by the number of reviews? Zoos, botanical gardens, etc. come to mind.
+2. a neighborhood is home to a large proportion of a category's city-wide members, but they collectively make up a small fraction of all businesses in the district?
+3. one category member is responsible for a large amount of interest, as measured by review count? For example, in the dot chart _Thirty Businesses with the Most Yelp Reviews_ above, Mustafa's Gemüse Kebap is the clear winner, but most kebap/kebab stands don't get anywhere near that number of reviews.
+
+Dropping categories with small sample sizes (Ilia and Amber set a threshold of
+1% of a district's businesses) ignores the issue posed by _1._, i.e. that a 
+neighborhood might be characterized by a small number of unusual businesses, or
+perhaps a single, very large institution. 
 
 I think most of the confusion here stems from the fact that specific epidemiological terminology is being used in a context where an epidemological approach is perfectly valid, but how the terminology is being used isn't quite right.
 
@@ -440,40 +427,80 @@ ggplot(sf_districts) +
 
 
 ```{r set_up_dataframe_of_prevalence_diffs, message=FALSE, warning=FALSE}
-city_summary <- yelp_df %>% 
+
+# calculate category prevalence for city
+preval_city_df <- yelp_df %>% 
     group_by(categories.title) %>% 
     summarise(cat_tot_city = n()) %>% 
     mutate(bus_tot_city = length(unique(yelp_df$id)),
-           preval_city = cat_tot_city/nrow(yelp_df)) %>% 
-    arrange(desc(preval_city))
+           preval_city = cat_tot_city/nrow(yelp_df))
 
+# calculate category review proportions for city
+rev_prop_city_df <- yelp_df %>% 
+    group_by(categories.title) %>% 
+    summarise(rev_cat_city = sum(review_count)) %>% 
+    mutate(rev_sum_city = sum(rev_cat_city),
+           rev_prop_city = rev_cat_city/rev_sum_city)
 
-dist_summary <- yelp_df %>% 
+# calculate category prevalence * proportion reviews for city
+preval_prop_city_df <- full_join(preval_city_df,
+                                 rev_prop_city_df,
+                                 by = "categories.title"
+                                 ) %>% 
+    mutate(preval_x_prop_city = preval_city * rev_prop_city)
+
+# calculate category prevalence for districts
+preval_dist_df <- yelp_df %>% 
     group_by(district, categories.title) %>% 
     count() %>%
-    full_join(yelp_df %>% group_by(district) %>% count(), by = "district") %>% 
+    full_join(yelp_df %>%
+                  group_by(district) %>%
+                  count(),
+              by = "district"
+              ) %>% 
     rename(cat_tot_dist = n.x, bus_tot_dist = n.y) %>% 
-    mutate(preval_dist = cat_tot_dist/bus_tot_dist) %>% 
-    arrange(district, desc(preval_dist))
+    mutate(preval_dist = cat_tot_dist/bus_tot_dist)
 
-diff_df <- full_join(dist_summary, city_summary, by = "categories.title") %>% 
-    mutate(preval_diff = preval_dist - preval_city) %>% 
+# calculate category review proportions for district
+rev_prop_dist_df <- yelp_df %>% 
+    group_by(district, categories.title) %>% 
+    summarise(rev_cat_dist = sum(review_count)) %>% 
+    full_join(yelp_df %>%
+                  group_by(district) %>%
+                  summarise(rev_sum_dist = sum(review_count)),
+              by = "district"
+              ) %>% 
+    mutate(rev_prop_dist = rev_cat_dist/rev_sum_dist)
+
+# calculate category prevalence * proportion reviews for district
+preval_prop_dist_df <- full_join(preval_dist_df,
+                                 rev_prop_dist_df,
+                                 by = c("district", "categories.title")
+                                 ) %>% 
+    mutate(preval_x_prop_dist = preval_dist * rev_prop_dist)
+
+# calculate 
+preval_df <- full_join(preval_prop_dist_df,
+                       preval_prop_city_df,
+                       by = "categories.title"
+                       ) %>% 
+    mutate(preval_diff = preval_x_prop_dist - preval_x_prop_city) %>% 
     arrange(district, desc(preval_diff))
 ```
 
 ```{r write_plot_district_function}
 plot_district <- function(district_name, coords) {
     
-    dist_diff_df <- diff_df %>% 
+    dist_preval_df <- preval_df %>% 
         filter(district == district_name) %>% 
-        head(6)
+        head(8)
     
     dist_df <- yelp_df %>% 
         filter(district == district_name,
-               categories.title %in% dist_diff_df$categories.title
+               categories.title %in% dist_preval_df$categories.title
                ) %>% 
         mutate(categories.title = ordered(categories.title,
-                                          levels = dist_diff_df$categories.title
+                                          levels = dist_preval_df$categories.title
                                           )
                )
     
