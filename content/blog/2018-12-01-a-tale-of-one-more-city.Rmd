@@ -59,197 +59,6 @@ rm(cat_titles1, cat_titles2)
 
 Intro here.
 
-
-
-
-
-
-
-
-
-
-## Some Demographics
-
-```{r plot_population_density}
-density_breaks <- sort(round(info_district_df$pop_dense))[c(2, 6, 8, 11, 12)]
-
-ggplot(sf_districts) +
-    geom_sf(aes(fill = info_district_df$pop_dense)) + 
-    scale_fill_viridis_c(breaks = density_breaks) +
-    labs(title = "Population Density (People per km^2)", fill = "density") +
-    theme(
-        panel.background = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)
-    )
-
-rm(density_breaks)
-```
-
-```{r plot_foreign_residents}
-foreign_breaks <- sort(info_district_df$foreign)[c(2, 8, 10, 11, 12)]
-
-ggplot(sf_districts) +
-    geom_sf(aes(fill = info_district_df$foreign)) + 
-    scale_fill_viridis_c(breaks = foreign_breaks) +
-    labs(title = "Proportion of Foreign Residents", fill = "proportion") +
-    theme(
-        panel.background = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)
-    )
-
-rm(foreign_breaks)
-```
-
-```{r plot_average_age}
-age_breaks <- sort(info_district_df$avg_age)[c(1, 3, 5, 9, 12)]
-
-ggplot(sf_districts) +
-    geom_sf(aes(fill = info_district_df$avg_age)) + 
-    scale_fill_viridis_c(breaks = age_breaks, direction = -1) +
-    labs(title = "Average Age of Residents", fill = "mean") +
-    theme(
-        panel.background = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)
-    )
-
-rm(age_breaks)
-```
-
-
-```{r modify_pol_parties, include=FALSE}
-# sum the rows to get proportions
-pol_parties$Sum <- rowSums(pol_parties[,2:8])
-
-# translate German and calculate proportion
-pol_parties <- pol_parties %>% 
-    rename(Rest = Sonstige) %>% 
-    mutate(SPD = SPD/Sum,
-           CDU = CDU/Sum,
-           Grüne = Grüne/Sum,
-           Linke = Linke/Sum,
-           AfD = AfD/Sum,
-           FDP = FDP/Sum,
-           Rest = Rest/Sum
-           ) %>% 
-    select(-Sum) %>% 
-    rename(`Die Grünen` = Grüne, `Die Linke` = Linke)
-
-# tidy data frame
-pol_parties <- pol_parties %>%
-    gather(Party, Proportion, -District) %>% 
-    arrange(District)
-
-pol_parties$District <- factor(pol_parties$District,
-                               ordered = T,
-                               levels = rev(unique(pol_parties$District))
-                               )
-
-pol_parties$Party <- factor(pol_parties$Party,
-                            ordered = T,
-                            levels = c("Die Linke", "SPD", "Die Grünen",
-                                       "CDU", "FDP", "AfD", "Rest"
-                                       )
-                            )
-
-# remove duplicated neukölln
-pol_parties <- pol_parties %>% distinct()
-
-# include size scale
-dom_berlin <- pol_parties %>% 
-    filter(District == "Berlin") %>% 
-    select(Party, Proportion)
-
-dom_berlin$Proportion <- c(10, 8.5, 6, 6, 4, 2.5, 1)
-
-dom_berlin <- dom_berlin %>% 
-    mutate(Proportion = as.integer(Proportion)) %>% 
-    rename(`Dominance - Berlin` = Proportion)
-
-pol_parties <- full_join(pol_parties, dom_berlin, by = "Party")
-
-# manually modify Die Grünen and Die Linke in Berlin to deal with overlap
-pol_parties[3, "Dominance - Berlin"] <- 7
-pol_parties[4, "Dominance - Berlin"] <- 6
-
-
-# rank according to afd dominance
-afd_dom <- pol_parties %>%
-    filter(Party == "AfD") %>% 
-    arrange(Proportion) %>% 
-    filter(District != "Berlin") %>%
-    mutate(afd_rank = 0:11) %>% 
-    select(-(2:4))
-
-afd_dom <- rbind(afd_dom, c("Berlin", 12)) %>% 
-    mutate(afd_rank = as.integer(afd_rank))
-
-pol_parties <- full_join(pol_parties, afd_dom, by = "District")
-
-pol_parties <- pol_parties %>%
-    mutate(District = factor(District,
-                             levels = arrange(pol_parties, afd_rank) %>% 
-                                 .$District %>% 
-                                 unique()
-                             )
-           )
-```
-
-
-```{r plot_political_parties, fig.height=7, fig.width=6.5}
-ggplot(pol_parties, aes(y = District,
-                        x = Proportion,
-                        group = District,
-                        color = Party
-                        )
-       ) +
-    geom_point(size = pol_parties$`Dominance - Berlin`) +
-    scale_color_manual(values = c("purple", "red", "#229954", "black",
-                                  "#F7DC6F", "#3498DB", "grey"
-                                  )
-                       ) +
-    theme_minimal() +
-    theme(panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          plot.title = element_text(hjust = 0.5)
-          ) + 
-    ggtitle("Party Dominance by District")
-```
-
-```{r plot_afd_representation}
-afd_district <- pol_parties %>% 
-    filter(Party == "AfD", District != "Berlin")
-
-
-ggplot(sf_districts) +
-    geom_sf(aes(fill = afd_district$Proportion)) + 
-    scale_fill_viridis_c() +
-    labs(title = "AfD Representation by District", fill = "proportion") +
-    theme(
-        panel.background = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)
-    )
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Characterizing Berlin Districts Through Yelp Reviews
 
 First, a glimpse of the data.
@@ -348,9 +157,14 @@ yelp_df %>%
 
 ```
 
-## Excursus: Deciding on a Metric
+## Deciding on a Metric
 
-Ilia Blinderman and Amber Thomas [draw](https://pudding.cool/2018/03/neighborhoods/) on Katie Hempenius' reasoning in her [analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San Francisco's neighborhoods. With the dual goals of "identify[ing] interesting trends" and "normaliz[ing] for the effects of commercial versus residential usage" in mind, Katie arrives at the following formula for "incidence rate":
+Ilia Blinderman and Amber Thomas [draw](https://pudding.cool/2018/03/neighborhoods/)
+on Katie Hempenius's reasoning in her 
+[analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San
+Francisco's neighborhoods. With the dual goals of "identify[ing] interesting 
+trends" and "normaliz[ing] for the effects of commercial versus residential 
+usage" in mind, Katie arrives at the following formula for "incidence rate":
 
 $$
 X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
@@ -359,27 +173,108 @@ $$
 
 I have a number of problems with this metric, ranging from major to minor.
 
-Fortunately, the biggest issue is also the easiest to address. Simply put, the
-above formula does _not_ describe the incidence rate. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a measure of _new cases_ in a specified period of _time_. Time, however, doesn't play
-a role in the Katie's formula. Instead, the formula describes the proportion of all category members that can be found in a given district, multiplied by a constant.
 
-Less of an issue, but perhaps relevant in terms of computational resources, is
-the fact that the second half of the equation - the constant - scales all the proporitions upwards without actually changing the relationships between them.
-That is to say, it has no effect on the neighborhood-level rankings, which is 
-what we are interested in. A simplified formula will produce the same results:
+Luckily, one of biggest issues is also the easiest to address. Simply put, the
+above formula does not describe the _incidence rate_. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a
+measure of _new cases_ in a specified period of _time_. Time, however, doesn't
+play a role in the above formula - nor should it.
+
+This doesn't at all invalidate Katie's, Ilia's, and Amber's respective work, as 
+"incidence" is commonly used to indicate the _occurence_ of something. In fact,
+most dictionary [definitions](https://www.dictionary.com/browse/incidence) 
+reflect just this usage. Nevertheless, the _incidence rate_ has a more specific 
+meaning than _incidence_ alone, and in the present context, where an
+epidemiological approach is appropriate, I think it's important to split a
+few hairs.
+
+A less pressing issue, but perhaps relevant in terms of computational resources,
+is the second half of the equation. It is a constant that scales all
+neighborhood-level values upwards by the same amount, and thus has no impact on
+the neighborhood-level rankings, which is what we are interested in. A 
+simplified formula will produce the same results:
 
 $$
 X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
 $$
 
+What remains is a simple formula for calculating the proportion of city-wide
+category members that can be found in a given neighborhood. Although valuable,
+to a degree, I don't believe this is the best metric for determining a 
+neighborhood's character, for the following reasons: 
+
+1. _It ignores differences in frequency_. If 10 of 20 city-wide members of 
+   category c~1~ are found in a neighborhood, and 100 of 200 city-wide member of
+   category c~2~ are found in the same neighborhood, then the formula tells us 
+   that the neighborhood is equally characterized by c~1~ and c~2~ (10/20 = 0.5
+   and 100/200 = 0.5). Even worse, if c~2~ has 210 instead of 200 city-wide 
+   members, then the formula tells us that c~1~ characterizes the neighborhood 
+   _better_ than c~2~, even though c~2~ occurs 10 times more than c~1~!
+2. _It is biased in favor of small sample sizes_. Different types of businesses 
+   likely aren't evenly distributed across a city - my analysis wouldn't make any
+   sense otherwise! In particular, a small number of niche businesses might
+   more likely be clustered in one area. For example, vegan restaurants might be
+   fairly rare in the city as a whole, but in one particulary trendy neighborhood
+   you might find a cluster of them. As is the nature of things, "trendy" 
+   neighborhoods are often also gentrifying inner-city areas with large minority
+   communities. If the minority population is dispersed throughout the rest of 
+   the city at a rate greater than the vegan restaurants, then the above formula 
+   would suggest that the neighborhood is better characterized as "vegan" than 
+   as Black, Latino, Arabic, Indian, etc. even if these communities and cultures are far
+   more prominent in everyday life. Of course, it's still important to know that
+   there are more vegan restaurants in one neighborhood than anywhere else, but 
+   neighborhood's uniqueness should not be determined primarily by the city-wide
+   scarcity of some of it's businesses.
+3. _It doesn't take into account variations in the total number of businesses_.
+   Two neighborhoods might both be home to 20 of 100 total category members, i.e.
+   each has 20% of the whole, but neighborhood _x_ has a total of 2,000 businesses,
+   while neighborhood _y_ only has 200. Should we say that the category characterizes
+   both neighborhoods equally? Probably not.
+4. _It doesn't necessarily reflect interest in the category_. There are two 
+   main indicators of interest in the Yelp data: 1. The number of listings per
+   category, and 2. the number of reviews per listing. 
+   
+   
+
+Calculating the proportion of category members in a district can tell us something
+about what makes a neighborhood unique
+
+$$
+score = 
+prevalence \times
+proportion \times
+interest
+$$
+Each part of this formula brings its own advantages and disadvantages. For 
+instance, prevalence might tell us what occurs the most, but it doesn't tell us
+anything about less prevalent businesses that might still be important in some
+other way, e.g. in terms of 
+
+$$
+score = 
+\left(
+    \frac{category_{zip}}{businesses_{zip}} - 
+    \frac{category_{city}}{businesses_{city}}
+\right) \times
+\frac{category_{zip}}{category_{city}} \times
+\frac{reviews_{mean/zip}}{reviews_{mean/city}}
+$$
+
+I'll refer to the first part as the _relative prevalence_, since it is a measure
+of district-level prevalence relative to the city-level prevalence. I've chosen 
+to use the relative prevalence, instead of just the district-level prevalence,
+because it is a better indicator of how the district is different from the city
+as a whole. It also offers a handy cut-off: Anything less than 0 is less prevalent
+in the district than in the city, and anything more than 0 is more prevalent in
+the district than in the city. It's then just a matter of sorting the relative 
+prevalences from greatest to least to find the categories that are overrepresented
+in the district.
+
+
+
+
+
 As a virtuous programmer (I try 🤷) I'll attempt to zero in on a good solution
 via edge cases, which I can formulate in a series of what-ifs:
-
-What if…
-
-1. a neighborhood is home to a category whose members make up less than 1% of all categories, but draws a disproportionate amount of interest, as measured by the number of reviews? Zoos, botanical gardens, etc. come to mind.
-2. a neighborhood is home to a large proportion of a category's city-wide members, but they collectively make up a small fraction of all businesses in the district?
-3. one category member is responsible for a large amount of interest, as measured by review count? For example, in the dot chart _Thirty Businesses with the Most Yelp Reviews_ above, Mustafa's Gemüse Kebap is the clear winner, but most kebap/kebab stands don't get anywhere near that number of reviews.
 
 Dropping categories with small sample sizes (Ilia and Amber set a threshold of
 1% of a district's businesses) ignores the issue posed by _1._, i.e. that a 
@@ -435,20 +330,6 @@ preval_city_df <- yelp_df %>%
     mutate(bus_tot_city = length(unique(yelp_df$id)),
            preval_city = cat_tot_city/nrow(yelp_df))
 
-# calculate category review proportions for city
-rev_prop_city_df <- yelp_df %>% 
-    group_by(categories.title) %>% 
-    summarise(rev_cat_city = sum(review_count)) %>% 
-    mutate(rev_sum_city = sum(rev_cat_city),
-           rev_prop_city = rev_cat_city/rev_sum_city)
-
-# calculate category prevalence * proportion reviews for city
-preval_prop_city_df <- full_join(preval_city_df,
-                                 rev_prop_city_df,
-                                 by = "categories.title"
-                                 ) %>% 
-    mutate(preval_x_prop_city = preval_city * rev_prop_city)
-
 # calculate category prevalence for districts
 preval_dist_df <- yelp_df %>% 
     group_by(district, categories.title) %>% 
@@ -461,37 +342,121 @@ preval_dist_df <- yelp_df %>%
     rename(cat_tot_dist = n.x, bus_tot_dist = n.y) %>% 
     mutate(preval_dist = cat_tot_dist/bus_tot_dist)
 
-# calculate category review proportions for district
-rev_prop_dist_df <- yelp_df %>% 
+#
+rev_dist_df <- yelp_df %>% 
     group_by(district, categories.title) %>% 
-    summarise(rev_cat_dist = sum(review_count)) %>% 
+    summarise(review_dist_sum = sum(review_count),
+        review_dist_mean = mean(review_count, trim = .1)) %>% 
     full_join(yelp_df %>%
-                  group_by(district) %>%
-                  summarise(rev_sum_dist = sum(review_count)),
-              by = "district"
+                  group_by(categories.title) %>%
+                  summarise(review_city_sum = sum(review_count),
+                      review_city_mean = mean(review_count, trim = .1)),
+              by = "categories.title"
               ) %>% 
-    mutate(rev_prop_dist = rev_cat_dist/rev_sum_dist)
+    mutate(review_prop = review_dist_mean/review_city_mean) %>% 
+    group_by(district) %>% 
+    mutate(review_dist_all = sum(review_dist_sum),
+           review_dist_prop = review_dist_sum/review_dist_all
+           )
 
 # calculate category prevalence * proportion reviews for district
-preval_prop_dist_df <- full_join(preval_dist_df,
-                                 rev_prop_dist_df,
-                                 by = c("district", "categories.title")
-                                 ) %>% 
-    mutate(preval_x_prop_dist = preval_dist * rev_prop_dist)
+preval_prop_dist_df <- preval_dist_df %>% 
+    full_join(preval_city_df,
+              by = "categories.title"
+              ) %>% 
+    mutate(preval_diff = preval_dist - preval_city,
+           prop_cat = cat_tot_dist/cat_tot_city
+           ) %>% 
+    full_join(rev_dist_df,
+              by = c("district", "categories.title")
+              ) %>% 
+    mutate(preval_x_catprop_x_revprop = preval_diff * prop_cat * review_prop) %>%
+    filter(preval_dist > 0.01 | review_dist_prop > 0.01) %>% 
+    arrange(district, desc(preval_x_catprop_x_revprop))
 
-# calculate 
-preval_df <- full_join(preval_prop_dist_df,
-                       preval_prop_city_df,
-                       by = "categories.title"
-                       ) %>% 
-    mutate(preval_diff = preval_x_prop_dist - preval_x_prop_city) %>% 
-    arrange(district, desc(preval_diff))
+categories <- unique(preval_prop_dist_df$categories.title)
+categ_list <- vector(mode = "list", length = length(categories))
+names(categ_list) <- categories
+
+for (category in categories) {
+    categ_list[[category]] <- preval_prop_dist_df %>% 
+        filter(categories.title == category) %>% 
+        arrange(desc(preval_diff)) %>% 
+        head(4)
+}
+
+final_df <- bind_rows(categ_list) %>% 
+    arrange(district, desc(preval_x_catprop_x_revprop))
 ```
+
+```{r}
+d <- "Friedrichshain-Kreuzberg"
+
+prop_cat_df <- preval_prop_dist_df %>%
+    filter(district == d) %>% 
+    arrange(desc(prop_cat)) %>% 
+    head(5) %>%
+    mutate(Method = "Category Proportion")
+
+preval_dist_df <- preval_prop_dist_df %>%
+    filter(district == d) %>% 
+    arrange(desc(preval_dist)) %>% 
+    head(5) %>%
+    mutate(Method = "Prevalence")
+
+preval_diff_df <- preval_prop_dist_df %>%
+    filter(district == d) %>% 
+    arrange(desc(preval_diff)) %>% 
+    head(5) %>%
+    mutate(Method = "Relative Prevalence")
+
+review_prop_df <- preval_prop_dist_df %>%
+    filter(district == d) %>% 
+    arrange(desc(review_prop)) %>% 
+    head(5) %>%
+    mutate(Method = "Review Proportion")
+
+preval_x_catprop_x_revprop_df <- preval_prop_dist_df %>%
+    filter(district == d) %>% 
+    arrange(desc(preval_x_catprop_x_revprop)) %>% 
+    head(5) %>%
+    mutate(Method = "RelPre x CatPro x RevPro")
+
+preval_x_catprop_x_revprop_filter_df <- final_df %>%
+    filter(district == d) %>% 
+    arrange(desc(preval_x_catprop_x_revprop)) %>% 
+    head(5) %>%
+    mutate(Method = "RP x CP x RP + Comp")
+
+bind_rows(list(prop_cat_df, preval_dist_df, preval_diff_df, review_prop_df,
+               preval_x_catprop_x_revprop_df, preval_x_catprop_x_revprop_filter_df
+               )
+          ) %>%
+    ungroup() %>% 
+    mutate(Method = factor(Method, levels = unique(.$Method))
+           ) %>% 
+    ggplot(aes(x = categories.title, y = cat_tot_city, fill = Method)) +
+    geom_bar(stat = "identity") +
+    geom_hline(yintercept = 0) +
+    coord_flip() +
+    facet_wrap(~Method) +
+    theme_minimal() +
+    theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.text.y = element_text(size = 7),
+          legend.position = "none"
+          ) +
+    ylab("City-Wide Prevalence") +
+    ggtitle("A Comparison of Metrics")
+```
+
 
 ```{r write_plot_district_function}
 plot_district <- function(district_name, coords) {
     
-    dist_preval_df <- preval_df %>% 
+    dist_preval_df <- final_df %>% 
         filter(district == district_name) %>% 
         head(8)
     
@@ -536,7 +501,7 @@ plot_district <- function(district_name, coords) {
 
 ```
 
-```{r plot_top_6_friedrichshain_kreuzberg, warning=F, message=F, fig.height=8}
+```{r plot_top_6_friedrichshain_kreuzberg, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5193, right = 13.4677, bottom = 52.4730, left = 13.3535)
 plot_district("Friedrichshain-Kreuzberg", coords = coords)
@@ -569,7 +534,7 @@ ggplot(sf_districts) +
 ```
 
 
-```{r plot_top_6_mitte, warning=F, message=F, fig.height=8}
+```{r plot_top_6_mitte, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5794, right = 13.4797, bottom = 52.4870, left = 13.2514)
 plot_district("Mitte", coords = coords)
@@ -605,7 +570,7 @@ ggplot(sf_districts) +
 
 
 
-```{r plot_top_6_charlottenburg_wilmersdorf, warning=F, message=F, fig.height=8}
+```{r plot_top_6_charlottenburg_wilmersdorf, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5542, right = 13.3781, bottom = 52.4618, left = 13.1498)
 plot_district("Charlottenburg-Wilmersdorf", coords = coords)
@@ -638,7 +603,7 @@ ggplot(sf_districts) +
 ```
 
 
-```{r plot_top_6_steglitz_zehlendorf, warning=F, message=F, fig.height=8}
+```{r plot_top_6_steglitz_zehlendorf, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5221, right = 13.4583, bottom = 52.3368, left = 13.0016)
 plot_district("Steglitz-Zehlendorf", coords = coords)
@@ -669,7 +634,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_tempelhof_schöneberg, warning=F, message=F, fig.height=8}
+```{r plot_top_6_tempelhof_schöneberg, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5329, right = 13.6021, bottom = 52.3477, left = 13.1455)
 plot_district("Tempelhof-Schöneberg", coords = coords)
@@ -703,7 +668,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_neukoelln, warning=F, message=F, fig.height=8}
+```{r plot_top_6_neukoelln, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5384, right = 13.6903, bottom = 52.3532, left = 13.2337)
 plot_district("Neukölln", coords = coords)
@@ -734,7 +699,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_treptow_koepenick, warning=F, message=F, fig.height=8}
+```{r plot_top_6_treptow_koepenick, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.5108, right = 13.8287, bottom = 52.3255, left = 13.3721)
 plot_district("Treptow-Köpenick", coords = coords)
@@ -765,7 +730,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_marzahn_hellersdorf, warning=F, message=F, fig.height=8}
+```{r plot_top_6_marzahn_hellersdorf, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.6147, right = 13.8160, bottom = 52.4299, left = 13.3594)
 plot_district("Marzahn-Hellersdorf", coords = coords)
@@ -797,7 +762,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_lichtenberg, warning=F, message=F, fig.height=8}
+```{r plot_top_6_lichtenberg, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.6243, right = 13.7401, bottom = 52.4395, left = 13.2835)
 plot_district("Lichtenberg", coords = coords)
@@ -827,7 +792,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_pankow, warning=F, message=F, fig.height=8}
+```{r plot_top_6_pankow, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.6899, right = 13.6636, bottom = 52.5054, left = 13.2069)
 plot_district("Pankow", coords = coords)
@@ -859,7 +824,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_reinikendorf, warning=F, message=F, fig.height=8}
+```{r plot_top_6_reinikendorf, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.6970, right = 13.5238, bottom = 52.5125, left = 13.0672)
 plot_district("Reinickendorf", coords = coords)
@@ -890,7 +855,7 @@ ggplot(sf_districts) +
     )
 ```
 
-```{r plot_top_6_spandau, warning=F, message=F, fig.height=8}
+```{r plot_top_6_spandau, warning=F, message=F, fig.height=10}
 
 coords <- c(top = 52.6118, right = 13.4243, bottom = 52.4269, left = 12.9676)
 plot_district("Spandau", coords = coords)

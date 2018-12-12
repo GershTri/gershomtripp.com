@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Berlin on Gershom Tripp</title>
+    <link>/tags/berlin/</link>
+    <description>Recent content in Berlin on Gershom Tripp</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Sat, 01 Dec 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/berlin/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>A Tale of One More City</title>
+      <link>/blog/a-tale-of-one-more-city/</link>
+      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/a-tale-of-one-more-city/</guid>
+      <description>Intro here.
+Some Demographics  Characterizing Berlin Districts Through Yelp Reviews First, a glimpse of the data.
+## Observations: 17,976 ## Variables: 12 ## $ id &amp;lt;chr&amp;gt; &amp;quot;d0NEZdBlNt1EAZ3oRT2Osg&amp;quot;, &amp;quot;yMz08uk3Q7UjF... ## $ name &amp;lt;chr&amp;gt; &amp;quot;Endlich&amp;quot;, &amp;quot;Glienicker Brücke&amp;quot;, &amp;quot;Lutter ... ## $ review_count &amp;lt;int&amp;gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1... ## $ categories.title &amp;lt;chr&amp;gt; &amp;quot;Bistros&amp;quot;, &amp;quot;Landmarks &amp;amp; Historical Build... ## $ rating &amp;lt;dbl&amp;gt; 4.0, 4.5, 3.</description>
+    </item>
+    
+    <item>
+      <title>How About That Weather!? - An EDA of Climate Change in Berlin.</title>
+      <link>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</link>
+      <pubDate>Wed, 26 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/how-about-that-weather-an-eda-of-climate-change-in-berlin/</guid>
+      <description>Introduction Data Import and Preparation Importing Tidying  Visualizing Climate Change in Berlin Average Annual Temperature: Berlin Average Annual Temperature: Global vs. Local An Overview of Selected Variables Proportion of +25°C Days Sunshine Precipitation Days Without Precipitation Air Pressure  Conclusion    Introduction In his book What We Think About When We Try Not to Think About Global Warming, Per Espen Stoknes writes the following about the role of psychological “distance” when faced with climate change:</description>
+    </item>
+    
+  </channel>
+</rss>

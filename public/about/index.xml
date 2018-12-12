@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>About on Gershom Tripp</title>
+    <link>/about/</link>
+    <description>Recent content in About on Gershom Tripp</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Sat, 22 Aug 2015 06:42:21 -0700</lastBuildDate>
+    
+	<atom:link href="/about/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>colophon</title>
+      <link>/about/colophon/</link>
+      <pubDate>Sat, 22 Aug 2015 06:28:26 -0700</pubDate>
+      
+      <guid>/about/colophon/</guid>
+      <description>This website is my personal hompage and blogfolio. I put mostly data-science-related content here, because that&amp;rsquo;s my passion, but sometimes I also write about other things.
+Because this is a blog cum portfolio you will often find prose interspersed with code. This is known as literate programming, and I hope it encourages readers/data scientists to learn from, teach, and otherwise interact with me.
+The site is built with Hugo—a static site generator made with Go.</description>
+    </item>
+    
+  </channel>
+</rss>

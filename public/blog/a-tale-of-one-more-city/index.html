@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta name="author" content="Gershom Tripp">
+<meta name="description" content="Intro here.
+Some Demographics  Characterizing Berlin Districts Through Yelp Reviews First, a glimpse of the data.
+## Observations: 17,976 ## Variables: 12 ## $ id &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF... ## $ name &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ... ## $ review_count &lt;int&gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1... ## $ categories.title &lt;chr&gt; &quot;Bistros&quot;, &quot;Landmarks &amp; Historical Build... ## $ rating &lt;dbl&gt; 4.0, 4.5, 3.">
+
+<meta property="og:title" content="A Tale of One More City" />
+<meta property="og:description" content="Intro here.
+Some Demographics  Characterizing Berlin Districts Through Yelp Reviews First, a glimpse of the data.
+## Observations: 17,976 ## Variables: 12 ## $ id &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF... ## $ name &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ... ## $ review_count &lt;int&gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1... ## $ categories.title &lt;chr&gt; &quot;Bistros&quot;, &quot;Landmarks &amp; Historical Build... ## $ rating &lt;dbl&gt; 4.0, 4.5, 3." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/a-tale-of-one-more-city/" /><meta property="article:published_time" content="2018-12-01T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2018-12-01T00:00:00&#43;00:00"/>
+
+<title>
+
+
+     A Tale of One More City 
+
+</title>
+<link rel="canonical" href="/blog/a-tale-of-one-more-city/">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/styles/github.min.css">
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Ubuntu+Mono:400,400i,700,700i|Raleway:500">
+
+
+
+    
+    <link rel="stylesheet" href="/css/reset.css?t=2018-12-10%2018%3a43%3a57.827175%20%2b0100%20CET%20m%3d%2b0.122014999">
+    <link rel="stylesheet" href="/css/pygments.css?t=2018-12-10%2018%3a43%3a57.827175%20%2b0100%20CET%20m%3d%2b0.122014999">
+    <link rel="stylesheet" href="/css/main.css?t=2018-12-10%2018%3a43%3a57.827175%20%2b0100%20CET%20m%3d%2b0.122014999">
+    
+        <link rel="stylesheet" href="/css/override.css?t=2018-12-10%2018%3a43%3a57.827175%20%2b0100%20CET%20m%3d%2b0.122014999">
+    
+
+
+
+
+<link rel="shortcut icon"
+
+    href="/img/leaf.ico"
+
+>
+
+
+
+
+
+
+
+
+</head>
+
+
+<body lang="en">
+
+<section class="header">
+    <div class="container">
+        <div class="content">
+            
+                
+                
+                
+                
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                
+                <a href="/"><img class="avatar" src="/img/profile-4x.png" srcset="/img/profile-4x.png 1x"></a>
+            
+            <a href="/"><div class="name">Gershom Tripp</div></a>
+            
+              <h3 class="self-intro">Freelance Data Scientist, R &amp; Python</h3>
+            
+            <nav>
+                <ul>
+                    
+                        <li class="nav-blog"><a href="/blog/"><span>Blog</span></a></li>
+                    
+                        <li class="nav-about"><a href="/about/"><span>About</span></a></li>
+                    
+                </ul>
+            </nav>
+        </div>
+    </div>
+</section>
+
+<section class="icons">
+    <div class="container">
+        <div class="content">
+        
+            <a href="//github.com/GershTri" target="_blank" rel="noopener"><img class="icon" src="/img/github.svg" alt="github" /></a>
+        
+
+        
+
+        
+            <a href="//twitter.com/ppirtmohsreg" target="_blank" rel="noopener"><img class="icon" src="/img/twitter.svg" alt="twitter" /></a>
+        
+
+	
+
+        
+
+        
+
+        
+            <a href="//linkedin.com/in/gershomtripp" target="_blank" rel="noopener"><img class="icon" src="/img/linkedin.svg" alt="linkedin" /></a>
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+            <a href="mailto:gershtripp@gmail.com"><img class="icon" src="/img/email.svg" alt="email" /></a>
+        
+
+        
+
+        
+        </div>
+    </div>
+</section>
+
+
+<section class="main post non-narrow zero-top-spacing">
+    <div class="container">
+        <div class="content">
+            <div class="front-matter">
+                <div class="title-container">
+                    <div class="page-heading">
+
+    A Tale of One More City
+
+</div>
+
+                    <div class="initials"><a href="/">ad</a></div>
+                </div>
+                <div class="meta">
+                    
+                    <div class="date" title='Sat Dec 1 2018 00:00:00 UTC'>Dec 1, 2018</div>
+                    
+                    
+		    <div class="reading-time"><div class="middot"></div>4 minutes read</div>
+                    
+                </div>
+            </div>
+            <div class="markdown">
+                <p>Intro here.</p>
+<div id="some-demographics" class="section level2">
+<h2>Some Demographics</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_population_density-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_foreign_residents-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_average_age-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_political_parties-1.png" width="624" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_afd_representation-1.png" width="672" /></p>
+</div>
+<div id="characterizing-berlin-districts-through-yelp-reviews" class="section level2">
+<h2>Characterizing Berlin Districts Through Yelp Reviews</h2>
+<p>First, a glimpse of the data.</p>
+<pre><code>## Observations: 17,976
+## Variables: 12
+## $ id                    &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF...
+## $ name                  &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ...
+## $ review_count          &lt;int&gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1...
+## $ categories.title      &lt;chr&gt; &quot;Bistros&quot;, &quot;Landmarks &amp; Historical Build...
+## $ rating                &lt;dbl&gt; 4.0, 4.5, 3.5, 5.0, 5.0, 5.0, 5.0, 3.0, ...
+## $ coordinates.latitude  &lt;dbl&gt; 52.40460, 52.41351, 52.41455, 52.41423, ...
+## $ coordinates.longitude &lt;dbl&gt; 13.06500, 13.09074, 13.09483, 13.09314, ...
+## $ location.city         &lt;chr&gt; &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, ...
+## $ location.zip_code     &lt;int&gt; 10783, 14109, 14109, 14109, 14109, 14109...
+## $ location.state        &lt;chr&gt; &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;...
+## $ price                 &lt;chr&gt; NA, NA, &quot;€€€&quot;, NA, NA, NA, NA, &quot;€€&quot;, NA,...
+## $ district              &lt;chr&gt; &quot;Tempelhof-Schöneberg&quot;, &quot;Steglitz-Zehlen...</code></pre>
+<p>Although the total number of observations from the dataset is 17976, the total number of businesses is actually 11989. The remaining 5987 observations are duplicates.</p>
+<p>A dot density plot can give us some perspective on the distribution of Yelp-reviewed businesses.</p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_dot_density_all_businesses-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_most_reviewed_berlin-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_30_businesses_with_most_reviews-1.png" width="672" /></p>
+</div>
+<div id="excursus-deciding-on-a-metric" class="section level2">
+<h2>Excursus: Deciding on a Metric</h2>
+<p>Ilia Blinderman and Amber Thomas <a href="https://pudding.cool/2018/03/neighborhoods/">draw</a> on Katie Hempenius’ reasoning in her <a href="https://katiehempenius.com/post/yelp-map-of-san-francisco/">analysis</a> of San Francisco’s neighborhoods. With the dual goals of “identify[ing] interesting trends” and “normaliz[ing] for the effects of commercial versus residential usage” in mind, Katie arrives at the following formula for “incidence rate”:</p>
+<p><span class="math display">\[
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
+\frac{Businesses\;in\;city}{Businesses\;in\;zip}
+\]</span></p>
+<p>I have a number of problems with this metric, ranging from major to minor.</p>
+<p>Fortunately, the biggest issue is also the easiest to address. Simply put, the above formula does <em>not</em> describe the incidence rate. The <a href="https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html">incidence rate</a> is a measure of <em>new cases</em> in a specified period of <em>time</em>. Time, however, doesn’t play a role in the Katie’s formula. Instead, the formula describes the proportion of all category members that can be found in a given district, multiplied by a constant.</p>
+<p>Less of an issue, but perhaps relevant in terms of computational resources, is the fact that the second half of the equation - the constant - scales all the proporitions upwards without actually changing the relationships between them. That is to say, it has no effect on the neighborhood-level rankings, which is what we are interested in. A simplified formula will produce the same results:</p>
+<p><span class="math display">\[
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
+\]</span></p>
+<p>As a virtuous programmer (I try 🤷) I’ll attempt to zero in on a good solution via edge cases, which I can formulate in a series of what-ifs:</p>
+<p>What if…</p>
+<ol style="list-style-type: decimal">
+<li>a neighborhood is home to a category whose members make up less than 1% of all categories, but draws a disproportionate amount of interest, as measured by the number of reviews? Zoos, botanical gardens, etc. come to mind.</li>
+<li>a neighborhood is home to a large proportion of a category’s city-wide members, but they collectively make up a small fraction of all businesses in the district?</li>
+<li>one category member is responsible for a large amount of interest, as measured by review count? For example, in the dot chart <em>Thirty Businesses with the Most Yelp Reviews</em> above, Mustafa’s Gemüse Kebap is the clear winner, but most kebap/kebab stands don’t get anywhere near that number of reviews.</li>
+</ol>
+<p>Dropping categories with small sample sizes (Ilia and Amber set a threshold of 1% of a district’s businesses) ignores the issue posed by <em>1.</em>, i.e. that a neighborhood might be characterized by a small number of unusual businesses, or perhaps a single, very large institution.</p>
+<p>I think most of the confusion here stems from the fact that specific epidemiological terminology is being used in a context where an epidemological approach is perfectly valid, but how the terminology is being used isn’t quite right.</p>
+<p>Using the proportion <code>category in district/category in city</code> can be misleading.</p>
+<p><br></p>
+</div>
+<div id="friedrichshain-kreuzberg" class="section level2">
+<h2>Friedrichshain-Kreuzberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_friedrichshain_kreuzberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_friedrichshain_kreuzberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="mitte" class="section level2">
+<h2>Mitte</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_mitte-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_mitte-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="charlottenburg-wilmersdorf" class="section level2">
+<h2>Charlottenburg-Wilmersdorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_charlottenburg_wilmersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_charlottenburg_wilmersdorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="steglitz-zehlendorf" class="section level2">
+<h2>Steglitz-Zehlendorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_steglitz_zehlendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_steglitz_zehlendorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="tempelhof-schoneberg" class="section level2">
+<h2>Tempelhof-Schöneberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_tempelhof_scho%CC%88neberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_tempelhof_scho%CC%88neberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="neukolln" class="section level2">
+<h2>Neukölln</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_neukoelln-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_neukoelln-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="treptow-kopenick" class="section level2">
+<h2>Treptow-Köpenick</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_treptow_koepenick-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_treptow_koepenick-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="marzahn-hellersdorf" class="section level2">
+<h2>Marzahn-Hellersdorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_marzahn_hellersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_marzahn_hellersdorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="lichtenberg" class="section level2">
+<h2>Lichtenberg</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_lichtenberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_lichtenberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="pankow" class="section level2">
+<h2>Pankow</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_pankow-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_pankow-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="reinickendorf" class="section level2">
+<h2>Reinickendorf</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_reinikendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_reinikendorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="spandau" class="section level2">
+<h2>Spandau</h2>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/highlight_spandau-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-01-a-tale-of-one-more-city_files/figure-html/plot_top_6_spandau-1.png" width="672" /></p>
+</div>
+
+                <br>
+                
+                  <div class="tags">
+                    <strong>Tags:</strong>
+                  
+                    <a href="/tags/berlin">Berlin</a>
+                  
+                    <a href="/tags/germany">Germany</a>
+                  
+                    <a href="/tags/yelp">Yelp</a>
+                  
+                    <a href="/tags/r">R</a>
+                  
+                    <a href="/tags/dataviz">Dataviz</a>
+                  
+                  </div>
+                  <br />
+                
+                <p class="back-to-posts"><a href="/blog">Back to posts</a></p>
+            </div>
+            <br>
+            <div class="disqus">
+                <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "gershomtripp-com" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+    </div>
+</section>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-123-45', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/highlight.min.js"></script>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/languages/r.min.js"></script>
+  
+
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+
+
+
+
+
+</body>
+</html>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
