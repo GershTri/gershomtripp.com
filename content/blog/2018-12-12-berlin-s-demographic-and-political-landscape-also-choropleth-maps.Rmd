@@ -30,7 +30,7 @@ library(httr)
 
 ```{r load_data, include=FALSE}
 # load cleaned yelp data (found here: https://github.com/GershTri/yelp-r)
-load("datasets/yelp/berlin_yelp_sf_info.rda")
+load("datasets/berlin_demographics/berlin_demo_sf_info.rda")
 ```
 
 ```{r reduce_restructure_yelp_df, include=FALSE}
