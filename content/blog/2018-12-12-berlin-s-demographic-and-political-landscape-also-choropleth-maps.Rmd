@@ -33,41 +33,7 @@ library(httr)
 load("datasets/berlin_demographics/berlin_demo_sf_info.rda")
 ```
 
-```{r reduce_restructure_yelp_df, include=FALSE}
-# extract categories from categories.title.1
-cat_titles1 <- yelp_df %>% 
-    filter(!is.na(categories.title.1)) %>% 
-    select(-categories.title) %>% 
-    rename(categories.title = categories.title.1)
-
-# extract categories from categories.title.2
-cat_titles2 <- yelp_df %>% 
-    filter(!is.na(categories.title.2)) %>% 
-    select(-categories.title) %>% 
-    rename(categories.title = categories.title.2)
-
-# recombind above data frames with yelp_df and remove unneeded variables
-yelp_df <- bind_rows(yelp_df, cat_titles1, cat_titles2) %>% 
-    select(-c(alias, image_url, is_closed, url, starts_with("categories.alias"),
-              starts_with("location.address"), starts_with("location.disp"),
-              phone, display_phone, starts_with("categories.title."),
-              location.country
-              )
-           )
-
-rm(cat_titles1, cat_titles2)
-```
-
 Intro here.
-
-
-
-
-
-
-
-
-
 
 ## Some Demographics
 
