@@ -20,14 +20,7 @@ knitr::opts_chunk$set(echo=FALSE)
 ```{r load_packages, include=FALSE}
 library(tidyverse)
 library(ggmap)
-# library(maps)
-# library(mapdata)
-# library(ggstance)
-# library(gridExtra)
-# library(readr)
-# library(httr)
 ```
-
 
 ```{r load_data, include=FALSE}
 # load cleaned yelp data (found here: https://github.com/GershTri/yelp-r)
@@ -61,9 +54,69 @@ yelp_df <- bind_rows(yelp_df, cat_titles1, cat_titles2) %>%
 rm(cat_titles1, cat_titles2)
 ```
 
-Intro here.
 
-## Characterizing Berlin Districts Through Yelp Reviews
+
+
+
+
+
+
+
+## Introduction
+
+***
+
+
+
+
+
+
+
+
+
+<br><br>
+
+## Getting the Data
+
+***
+
+The data were collected using the official Yelp [_Fusion_](https://www.yelp.de/developers/documentation/v3) API. Yelp's API isn't
+really made for bulk downloading data, so there were three limits to 
+contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 
+listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district
+names and PLZ (German ZIP codes) consistently failed because of 2., so I divided
+up Berlin's coordinates into a grid of approx. 500x500-meter blocks and sent
+requests for each block.
+
+The above method worked well, except for one unforeseen problem: Longitudinal
+coordinates do not run parallel to one another, but converge at the
+poles and spread as they approach the equator, so the same longitudinal 
+coordinates do not represent the same distances at different latitudes. The
+upshot was that my grid-scan strategy broke down the more it went east and south.
+Some sort of correction would be ideal, but I decided for a "good enough" approach
+and simply shortened the longitudinal intervals and rescanned the affected parts.
+
+This strategy, being more ax than scalpel, generates a lot of duplicates. After 
+removing them I ended up with `r length(unique(yelp_df$id))` unique listings for 
+Berlin and Potsdam, which is a small city just outside of Berlin. 
+
+
+
+
+
+
+
+
+
+
+
+<br><br>
+
+## A Brief Analysis of Yelp-Reviewed Businesses in Berlin
+
+***
+
+Before I get to the districts, I 
 
 First, a glimpse of the data.
 
@@ -75,12 +128,15 @@ yelp_df <- yelp_df %>%
 glimpse(yelp_df)
 ```
 
-Although the total number of observations from the dataset is `r nrow(yelp_df)`,
-the total number of businesses is actually `r length(unique(yelp_df$id))`. The
-remaining `r nrow(yelp_df) - length(unique(yelp_df$id))` observations are duplicates.
-
-A dot density plot can give us some perspective on the distribution of Yelp-reviewed
-businesses. 
+As I mentioned above, the number of unique listings for Berlin and Potsdam is 
+just under 12,000. The 17,976 you see here is due the fact that some listings 
+belong to multiple categories. I haven't been able to discern any kind of 
+consistent hierarchy (i.e. supercategories and subcategories), so every 
+A dot density plot can give some perspective on the distribution of Yelp-reviewed
+businesses. The colors correspond to Berlin's 12 administrative districts and 
+Potsdam, a town to the southwest of Berlin. The names of the districts aren't 
+important at this point. Interesting is the disparity in the spatial density of
+Yelp-reviewed businesses between districts.
 
 ```{r plot_dot_density_all_businesses, message=FALSE, warning=FALSE}
 berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8000, top = 52.6918)
@@ -113,6 +169,8 @@ berlin_map %>%
           )
 ```
 
+
+
 ```{r plot_30_categories_with_most_listings}
 #
 yelp_df %>% 
@@ -137,6 +195,7 @@ yelp_df %>%
           ) + 
     ggtitle("Thirty Categories with the Most Yelp Listings")
 ```
+
 ```{r plot_30_categories_with_most_reviews_per_listing}
 #
 yelp_df %>% 
@@ -182,6 +241,10 @@ yelp_df %>%
     xlab("Number of Reviews") +
     ggtitle("Thirty Businesses with the Most Yelp Reviews")
 ```
+
+A histogram can show us the distribution of reviews, specifically the number of 
+reviews per listing. Here we can see that the bulk of the listings have less
+than 100 reviews, so the businesses in the 
 
 ```{r plot_histogram_review_count_per_listing, warning=F, message=F}
 yelp_df %>% 
@@ -239,6 +302,20 @@ review_mean_less_100_df %>%
 #     filter(categories.title == "Sri Lankan") %>% 
 #     select(name, review_count)
 ```
+
+
+
+
+
+
+
+
+
+<br><br>
+
+#### Berliner's Love Value.
+
+
 
 ```{r number_of_listings_in_each_price_class, warning=F, message=F}
 yelp_df %>% 

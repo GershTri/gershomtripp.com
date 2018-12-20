@@ -12,6 +12,7 @@ slug: how-about-that-weather-an-eda-of-climate-change-in-berlin
 output:
   blogdown::html_page:
     toc: yes
+draft: true
 ---
 
 
