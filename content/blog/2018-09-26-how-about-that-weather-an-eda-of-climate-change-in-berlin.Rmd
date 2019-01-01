@@ -408,8 +408,7 @@ I can then combine the NASA data with the Berlin data and visualize them togethe
 
 ```{r viz-global-vs-berlin}
 berlin_data %>%
-    filter(Variable == "Avg. Temp. (°C)",
-           ) %>%
+    filter(Variable == "Avg. Temp. (°C)") %>%
     group_by(Year) %>%
     summarise(Value = mean(Value, na.rm = T)) %>%
     
@@ -451,6 +450,31 @@ The upward trend in mean annual temperature in Berlin broadly parallels that of 
 
 
 
+```{r}
+berlin_temp <- berlin_data %>%
+    filter(Variable == "Avg. Temp. (°C)") %>% 
+    group_by(Year, Week) %>%
+    summarise(Value = mean(Value)) %>% 
+    full_join(berlin_data %>%
+                  filter(Variable == "Avg. Temp. (°C)"
+                         ) %>%
+                  group_by(Week) %>% 
+                  summarise(Week_mean = mean(Value, trim = .2)),
+              by ="Week"
+              ) %>% 
+    mutate(Mean_dev = Value - Week_mean)
+
+berlin_temp %>% 
+    ggplot(aes(x = Year, y = Week)) +
+    geom_raster(aes(fill = Mean_dev))
+
+berlin_temp$pos_neg <- ifelse(berlin_temp$Value < 0, -1, 1)
+
+berlin_temp %>% 
+    mutate(Mean_dev_trans = Mean_dev^2 * pos_neg) %>% 
+    ggplot(aes(x = Year, y = Week)) +
+    geom_raster(aes(fill = Mean_dev_trans))
+```
 
 
 

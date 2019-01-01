@@ -298,6 +298,17 @@ review_mean_less_100_df %>%
     filter(bin == "5", review_mean > 35) %>% 
     arrange(desc(review_mean))
 
+yelp_df %>%
+    ggplot(aes(x = rating)) +
+    geom_histogram(binwidth = .5, color = "black", fill = "#2471A3") +
+    scale_x_continuous(breaks = seq(0, 5, .5)) +
+    theme_minimal() + 
+    theme(panel.grid.minor.x = element_blank(),
+          panel.grid.major.x = element_blank()
+          ) + 
+    labs(title = "Distribution of Reviews (0-5 Stars)")
+    
+
 # yelp_df %>%
 #     filter(categories.title == "Sri Lankan") %>% 
 #     select(name, review_count)
@@ -362,46 +373,47 @@ $$
 I have a number of problems with this metric, ranging from major to minor.
 
 
-Luckily, one of biggest issues is also the easiest to address. Simply put, the
-above formula does not describe the _incidence rate_. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a
+Some will probably think that my first complaint is just hairsplitting, but think
+it should be useful, nonetheless. Simply put, the above formula does not describe
+the _incidence rate_. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a
 measure of _new cases_ in a specified period of _time_. Time, however, doesn't
-play a role in the above formula - nor should it.
+play a role in the above formula - nor should it, as we are really just interested
+in a cross-section of Yelp-reviewed Berlin businesses at this point.
 
-This doesn't at all invalidate Katie's, Ilia's, and Amber's respective work, as 
-"incidence" is commonly used to indicate the _occurence_ of something. In fact,
+This doesn't at all invalidate Katie's, Ilia's, and Amber's work. "Incidence" is
+commonly used to indicate the _occurence_ of something. In fact,
 most dictionary [definitions](https://www.dictionary.com/browse/incidence) 
 reflect just this usage. Nevertheless, the _incidence rate_ has a more specific 
-meaning than _incidence_ alone, and in the present context, where an
-epidemiological approach is appropriate, I think it's important to split a
-few hairs.
+meaning than _incidence_ alone, and this is particularly relevant in the present
+context, where an epidemiological approach is appropriate.
 
 A less pressing issue, but perhaps relevant in terms of computational resources,
-is the second half of the equation. It is a constant that scales all
-neighborhood-level values upwards by the same amount, and thus has no impact on
-the neighborhood-level rankings, which is what we are interested in. A 
-simplified formula will produce the same results:
+is the second half of the equation: It is a neighborhood-level constant, and has,
+as such, no impact on the neighborhood-level rankings, which is what we are
+interested in. A simplified formula will produce the same results:
 
 $$
 X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
 $$
 
-What remains is a simple formula for calculating the proportion of city-wide
-category members that can be found in a given neighborhood. Although valuable,
-to a degree, I don't believe this is the best metric for determining a 
-neighborhood's character, for the following reasons: 
+What remains is something that could probably be more accurately described as a
+riff on the _prevalence rate_, where our "cases" are the number of businesses from
+a category found in a given district, and our population consists of all category
+members. Although useful, there are a number of problems with this metric when
+it is used alone:
 
-1. _It ignores differences in frequency_. If 10 of 20 city-wide members of 
+1. _It ignores differences in business frequency_. If 10 of 20 city-wide members of 
    category c~1~ are found in a neighborhood, and 100 of 200 city-wide member of
    category c~2~ are found in the same neighborhood, then the formula tells us 
    that the neighborhood is equally characterized by c~1~ and c~2~ (10/20 = 0.5
    and 100/200 = 0.5). Even worse, if c~2~ has 210 instead of 200 city-wide 
    members, then the formula tells us that c~1~ characterizes the neighborhood 
-   _better_ than c~2~, even though c~2~ occurs 10 times more than c~1~!
+   _better_ than c~2~, even though c~2~ occurs 10 times more than c~1~ in the district!
 2. _It is biased in favor of small sample sizes_. Different types of businesses 
-   likely aren't evenly distributed across a city - my analysis wouldn't make any
-   sense otherwise! In particular, a small number of niche businesses might
-   more likely be clustered in one area. For example, vegan restaurants might be
-   fairly rare in the city as a whole, but in one particulary trendy neighborhood
+   likely aren't evenly distributed across a city. In particular, a small number
+   of niche businesses might more likely be clustered in one area. For example,
+   vegan restaurants might be fairly rare in the city as a whole, but in one
+   particulary trendy neighborhood
    you might find a cluster of them. As is the nature of things, "trendy" 
    neighborhoods are often also gentrifying inner-city areas with large minority
    communities. If the minority population is dispersed throughout the rest of 
@@ -410,21 +422,24 @@ neighborhood's character, for the following reasons:
    as Black, Latino, Arabic, Indian, etc. even if these communities and cultures are far
    more prominent in everyday life. Of course, it's still important to know that
    there are more vegan restaurants in one neighborhood than anywhere else, but 
-   neighborhood's uniqueness should not be determined primarily by the city-wide
-   scarcity of some of it's businesses.
+   neighborhood's uniqueness should not be determined primarily by the general 
+   scarcity of some of its businesses.
 3. _It doesn't take into account variations in the total number of businesses_.
    Two neighborhoods might both be home to 20 of 100 total category members, i.e.
    each has 20% of the whole, but neighborhood _x_ has a total of 2,000 businesses,
    while neighborhood _y_ only has 200. Should we say that the category characterizes
    both neighborhoods equally? Probably not.
-4. _It doesn't necessarily reflect interest in the category_. There are two 
-   main indicators of interest in the Yelp data: 1. The number of listings per
-   category, and 2. the number of reviews per listing. 
+4. _It ignores other indicators of interest_. It wouldn't be farfetched to view
+   the number of listings for a given category in a district as one indication 
+   of interest. For example, if we assume that two districts d~1~ and d~2~ have,
+   in reality, the same number of businesses from category c~x~, but there are more
+   Yelp listings for that category in one d~1~ than d~2~, then we could
+   hypothesize that people are more interested in c~x~ in d~1~ than in d~2~. It 
+   would then be reasonable to conclude that c~x~ characterizes d~1~ _more_ than
+   it does d~2~. But what if the c~x~ listings in d~2~ have more reviews on average?
    
    
 
-Calculating the proportion of category members in a district can tell us something
-about what makes a neighborhood unique
 
 $$
 score = 
