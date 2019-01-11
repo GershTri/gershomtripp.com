@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta name="author" content="Gershom Tripp">
+<meta name="description" content="Introduction 
+ Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx.">
+
+<meta property="og:title" content="Characterizing Berlin&#39;s Districts Through Yelp Data" />
+<meta property="og:description" content="Introduction 
+ Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/characterizing-berlin-s-districts-through-yelp-data/" /><meta property="article:published_time" content="2018-12-14T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2018-12-14T00:00:00&#43;00:00"/>
+
+<title>
+
+
+     Characterizing Berlin&#39;s Districts Through Yelp Data 
+
+</title>
+<link rel="canonical" href="/blog/characterizing-berlin-s-districts-through-yelp-data/">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/styles/github.min.css">
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Ubuntu+Mono:400,400i,700,700i|Raleway:500">
+
+
+
+    
+    <link rel="stylesheet" href="/css/reset.css?t=2019-01-11%2010%3a54%3a40.598115%20%2b0100%20CET%20m%3d%2b0.069215560">
+    <link rel="stylesheet" href="/css/pygments.css?t=2019-01-11%2010%3a54%3a40.598115%20%2b0100%20CET%20m%3d%2b0.069215560">
+    <link rel="stylesheet" href="/css/main.css?t=2019-01-11%2010%3a54%3a40.598115%20%2b0100%20CET%20m%3d%2b0.069215560">
+    
+        <link rel="stylesheet" href="/css/override.css?t=2019-01-11%2010%3a54%3a40.598115%20%2b0100%20CET%20m%3d%2b0.069215560">
+    
+
+
+
+
+<link rel="shortcut icon"
+
+    href="/img/leaf.ico"
+
+>
+
+
+
+
+
+
+
+
+</head>
+
+
+<body lang="en">
+
+<section class="header">
+    <div class="container">
+        <div class="content">
+            
+                
+                
+                
+                
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                
+                <a href="/"><img class="avatar" src="/img/profile-4x.png" srcset="/img/profile-4x.png 1x"></a>
+            
+            <a href="/"><div class="name">Gershom Tripp</div></a>
+            
+              <h3 class="self-intro">Freelance Data Scientist, R &amp; Python</h3>
+            
+            <nav>
+                <ul>
+                    
+                        <li class="nav-blog"><a href="/blog/"><span>Blog</span></a></li>
+                    
+                        <li class="nav-about"><a href="/about/"><span>About</span></a></li>
+                    
+                </ul>
+            </nav>
+        </div>
+    </div>
+</section>
+
+<section class="icons">
+    <div class="container">
+        <div class="content">
+        
+            <a href="//github.com/GershTri" target="_blank" rel="noopener"><img class="icon" src="/img/github.svg" alt="github" /></a>
+        
+
+        
+
+        
+            <a href="//twitter.com/ppirtmohsreg" target="_blank" rel="noopener"><img class="icon" src="/img/twitter.svg" alt="twitter" /></a>
+        
+
+	
+
+        
+
+        
+
+        
+            <a href="//linkedin.com/in/gershomtripp" target="_blank" rel="noopener"><img class="icon" src="/img/linkedin.svg" alt="linkedin" /></a>
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+            <a href="mailto:gershtripp@gmail.com"><img class="icon" src="/img/email.svg" alt="email" /></a>
+        
+
+        
+
+        
+        </div>
+    </div>
+</section>
+
+
+<section class="main post non-narrow zero-top-spacing">
+    <div class="container">
+        <div class="content">
+            <div class="front-matter">
+                <div class="title-container">
+                    <div class="page-heading">
+
+    Characterizing Berlin&#39;s Districts Through Yelp Data
+
+</div>
+
+                    <div class="initials"><a href="/">ad</a></div>
+                </div>
+                <div class="meta">
+                    
+                    <div class="date" title='Fri Dec 14 2018 00:00:00 UTC'>Dec 14, 2018</div>
+                    
+                    
+		    <div class="reading-time"><div class="middot"></div>8 minutes read</div>
+                    
+                </div>
+            </div>
+            <div class="markdown">
+                <div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<hr />
+<p><br><br></p>
+</div>
+<div id="getting-the-data" class="section level2">
+<h2>Getting the Data</h2>
+<hr />
+<p>The data were collected using the official Yelp <a href="https://www.yelp.de/developers/documentation/v3"><em>Fusion</em></a> API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx. 500x500-meter blocks and sent requests for each block.</p>
+<p>The above method worked well, except for one unforeseen problem: Longitudinal coordinates do not run parallel to one another, but converge at the poles and spread as they approach the equator, so the same longitudinal coordinates do not represent the same distances at different latitudes. The upshot was that my grid-scan strategy broke down the more it went east and south. Some sort of correction would be ideal, but I decided for a “good enough” approach and simply shortened the longitudinal intervals and rescanned the affected parts.</p>
+<p>This strategy, being more ax than scalpel, generates a lot of duplicates. After removing them I ended up with 11989 unique listings for Berlin and Potsdam, which is a small city just outside of Berlin.</p>
+<p><br><br></p>
+</div>
+<div id="a-brief-analysis-of-yelp-reviewed-businesses-in-berlin" class="section level2">
+<h2>A Brief Analysis of Yelp-Reviewed Businesses in Berlin</h2>
+<hr />
+<p>Before I get to the districts, I</p>
+<p>First, a glimpse of the data.</p>
+<pre><code>## Observations: 17,976
+## Variables: 12
+## $ id                    &lt;chr&gt; &quot;d0NEZdBlNt1EAZ3oRT2Osg&quot;, &quot;yMz08uk3Q7UjF...
+## $ name                  &lt;chr&gt; &quot;Endlich&quot;, &quot;Glienicker Brücke&quot;, &quot;Lutter ...
+## $ review_count          &lt;int&gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1...
+## $ categories.title      &lt;chr&gt; &quot;Bistros&quot;, &quot;Landmarks &amp; Historical Build...
+## $ rating                &lt;dbl&gt; 4.0, 4.5, 3.5, 5.0, 5.0, 5.0, 5.0, 3.0, ...
+## $ coordinates.latitude  &lt;dbl&gt; 52.40460, 52.41351, 52.41455, 52.41423, ...
+## $ coordinates.longitude &lt;dbl&gt; 13.06500, 13.09074, 13.09483, 13.09314, ...
+## $ location.city         &lt;chr&gt; &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, &quot;Berlin&quot;, ...
+## $ location.zip_code     &lt;int&gt; 10783, 14109, 14109, 14109, 14109, 14109...
+## $ location.state        &lt;chr&gt; &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;...
+## $ price                 &lt;chr&gt; NA, NA, &quot;€€€&quot;, NA, NA, NA, NA, &quot;€€&quot;, NA,...
+## $ district              &lt;chr&gt; &quot;Tempelhof-Schöneberg&quot;, &quot;Steglitz-Zehlen...</code></pre>
+<p>As I mentioned above, the number of unique listings for Berlin and Potsdam is just under 12,000. The 17,976 you see here is due the fact that some listings belong to multiple categories. I haven’t been able to discern any kind of consistent hierarchy (i.e. supercategories and subcategories), so every A dot density plot can give some perspective on the distribution of Yelp-reviewed businesses. The colors correspond to Berlin’s 12 administrative districts and Potsdam, a town to the southwest of Berlin. The names of the districts aren’t important at this point. Interesting is the disparity in the spatial density of Yelp-reviewed businesses between districts.</p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_dot_density_all_businesses-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_categories_with_most_listings-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_categories_with_most_reviews_per_listing-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_businesses_with_most_reviews-1.png" width="672" /></p>
+<p>A histogram can show us the distribution of reviews, specifically the number of reviews per listing. Here we can see that the bulk of the listings have less than 100 reviews, so the businesses in the</p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_histogram_review_count_per_listing-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-1.png" width="672" /><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-2.png" width="672" /></p>
+<pre><code>## # A tibble: 21 x 4
+## # Groups:   categories.title [21]
+##    categories.title Listings review_mean bin  
+##    &lt;chr&gt;               &lt;int&gt;       &lt;dbl&gt; &lt;fct&gt;
+##  1 Shopping Centers        2         106 5    
+##  2 Aquariums               3         102 5    
+##  3 Sri Lankan              1          99 5    
+##  4 Jewish                  2          80 5    
+##  5 Tabletop Games          1          77 5    
+##  6 Taiwanese               4          66 5    
+##  7 Ukrainian               3          61 5    
+##  8 Baden                   3          60 5    
+##  9 Pensions                1          57 5    
+## 10 Cajun/Creole            2          54 5    
+## # ... with 11 more rows</code></pre>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
+<p><br><br></p>
+<div id="berliners-love-value." class="section level4">
+<h4>Berliner’s Love Value.</h4>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/number_of_listings_in_each_price_class-1.png" width="672" /></p>
+</div>
+</div>
+<div id="deciding-on-a-metric" class="section level2">
+<h2>Deciding on a Metric</h2>
+<p>Ilia Blinderman and Amber Thomas <a href="https://pudding.cool/2018/03/neighborhoods/">rely</a> on Katie Hempenius’s “incidence rate” metric in her <a href="https://katiehempenius.com/post/yelp-map-of-san-francisco/">analysis</a> of San Francisco’s neighborhoods. I recommend reading Katie’s post for a better understanding of how she arrived at her metric, but we might summarize her reasoning thusly: Assuming the fraction of category<sub>z</sub></p>
+<p>With the dual goals of “identify[ing] interesting trends” and “normaliz[ing] for the effects of commercial versus residential usage” in mind, Katie arrives at the following formula for “incidence rate”:</p>
+<p><span class="math display">\[
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
+\frac{Businesses\;in\;city}{Businesses\;in\;zip}
+\]</span></p>
+<p>I have a number of problems with this metric, ranging from major to minor.</p>
+<p>Some will probably think that my first complaint is just hairsplitting, but think it should be useful, nonetheless. Simply put, the above formula does not describe the <em>incidence rate</em>. The <a href="https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html">incidence rate</a> is a measure of <em>new cases</em> in a specified period of <em>time</em>. Time, however, doesn’t play a role in the above formula - nor should it, as we are really just interested in a cross-section of Yelp-reviewed Berlin businesses at this point.</p>
+<p>This doesn’t at all invalidate Katie’s, Ilia’s, and Amber’s work. “Incidence” is commonly used to indicate the <em>occurence</em> of something. In fact, most dictionary <a href="https://www.dictionary.com/browse/incidence">definitions</a> reflect just this usage. Nevertheless, the <em>incidence rate</em> has a more specific meaning than <em>incidence</em> alone, and this is particularly relevant in the present context, where an epidemiological approach is appropriate.</p>
+<p>A less pressing issue, but perhaps relevant in terms of computational resources, is the second half of the equation: It is a neighborhood-level constant, and has, as such, no impact on the neighborhood-level rankings, which is what we are interested in. A simplified formula will produce the same results:</p>
+<p><span class="math display">\[
+X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
+\]</span></p>
+<p>What remains is something that could probably be more accurately described as a riff on the <em>prevalence rate</em>, where our “cases” are the number of businesses from a category found in a given district, and our population consists of all category members. Although useful, there are a number of problems with this metric when it is used alone:</p>
+<ol style="list-style-type: decimal">
+<li><em>It ignores differences in business frequency</em>. If 10 of 20 city-wide members of category c<sub>1</sub> are found in a neighborhood, and 100 of 200 city-wide member of category c<sub>2</sub> are found in the same neighborhood, then the formula tells us that the neighborhood is equally characterized by c<sub>1</sub> and c<sub>2</sub> (10/20 = 0.5 and 100/200 = 0.5). Even worse, if c<sub>2</sub> has 210 instead of 200 city-wide members, then the formula tells us that c<sub>1</sub> characterizes the neighborhood <em>better</em> than c<sub>2</sub>, even though c<sub>2</sub> occurs 10 times more than c<sub>1</sub> in the district!</li>
+<li><em>It is biased in favor of small sample sizes</em>. Different types of businesses likely aren’t evenly distributed across a city. In particular, a small number of niche businesses might more likely be clustered in one area. For example, vegan restaurants might be fairly rare in the city as a whole, but in one particulary trendy neighborhood you might find a cluster of them. As is the nature of things, “trendy” neighborhoods are often also gentrifying inner-city areas with large minority communities. If the minority population is dispersed throughout the rest of the city at a rate greater than the vegan restaurants, then the above formula would suggest that the neighborhood is better characterized as “vegan” than as Black, Latino, Arabic, Indian, etc. even if these communities and cultures are far more prominent in everyday life. Of course, it’s still important to know that there are more vegan restaurants in one neighborhood than anywhere else, but neighborhood’s uniqueness should not be determined primarily by the general scarcity of some of its businesses.</li>
+<li><em>It doesn’t take into account variations in the total number of businesses</em>. Two neighborhoods might both be home to 20 of 100 total category members, i.e. each has 20% of the whole, but neighborhood <em>x</em> has a total of 2,000 businesses, while neighborhood <em>y</em> only has 200. Should we say that the category characterizes both neighborhoods equally? Probably not.</li>
+<li><em>It ignores other indicators of interest</em>. It wouldn’t be farfetched to view the number of listings for a given category in a district as one indication of interest. For example, if we assume that two districts d<sub>1</sub> and d<sub>2</sub> have, in reality, the same number of businesses from category c<sub>x</sub>, but there are more Yelp listings for that category in one d<sub>1</sub> than d<sub>2</sub>, then we could hypothesize that people are more interested in c<sub>x</sub> in d<sub>1</sub> than in d<sub>2</sub>. It would then be reasonable to conclude that c<sub>x</sub> characterizes d<sub>1</sub> <em>more</em> than it does d<sub>2</sub>. But what if the c<sub>x</sub> listings in d<sub>2</sub> have more reviews on average?</li>
+</ol>
+<p><span class="math display">\[
+score = 
+prevalence \times
+proportion \times
+interest
+\]</span> Each part of this formula brings its own advantages and disadvantages. For instance, prevalence might tell us what occurs the most, but it doesn’t tell us anything about less prevalent businesses that might still be important in some other way, e.g. in terms of</p>
+<p><span class="math display">\[
+score = 
+\left(
+    \frac{category_{zip}}{businesses_{zip}} - 
+    \frac{category_{city}}{businesses_{city}}
+\right) \times
+\frac{category_{zip}}{category_{city}} \times
+\frac{reviews_{mean/zip}}{reviews_{mean/city}}
+\]</span></p>
+<p>I’ll refer to the first part as the <em>relative prevalence</em>, since it is a measure of district-level prevalence relative to the city-level prevalence. I’ve chosen to use the relative prevalence, instead of just the district-level prevalence, because it is a better indicator of how the district is different from the city as a whole. It also offers a handy cut-off: Anything less than 0 is less prevalent in the district than in the city, and anything more than 0 is more prevalent in the district than in the city. It’s then just a matter of sorting the relative prevalences from greatest to least to find the categories that are overrepresented in the district.</p>
+<p>As a virtuous programmer (I try 🤷) I’ll attempt to zero in on a good solution via edge cases, which I can formulate in a series of what-ifs:</p>
+<p>Dropping categories with small sample sizes (Ilia and Amber set a threshold of 1% of a district’s businesses) ignores the issue posed by <em>1.</em>, i.e. that a neighborhood might be characterized by a small number of unusual businesses, or perhaps a single, very large institution.</p>
+<p>I think most of the confusion here stems from the fact that specific epidemiological terminology is being used in a context where an epidemological approach is perfectly valid, but how the terminology is being used isn’t quite right.</p>
+<p>Using the proportion <code>category in district/category in city</code> can be misleading.</p>
+<p><br></p>
+</div>
+<div id="friedrichshain-kreuzberg" class="section level2">
+<h2>Friedrichshain-Kreuzberg</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_friedrichshain_kreuzberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_friedrichshain_kreuzberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="mitte" class="section level2">
+<h2>Mitte</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_mitte-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_mitte-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="charlottenburg-wilmersdorf" class="section level2">
+<h2>Charlottenburg-Wilmersdorf</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_charlottenburg_wilmersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_charlottenburg_wilmersdorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="steglitz-zehlendorf" class="section level2">
+<h2>Steglitz-Zehlendorf</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_steglitz_zehlendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_steglitz_zehlendorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="tempelhof-schoneberg" class="section level2">
+<h2>Tempelhof-Schöneberg</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_tempelhof_scho%CC%88neberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_tempelhof_scho%CC%88neberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="neukolln" class="section level2">
+<h2>Neukölln</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_neukoelln-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_neukoelln-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="treptow-kopenick" class="section level2">
+<h2>Treptow-Köpenick</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_treptow_koepenick-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_treptow_koepenick-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="marzahn-hellersdorf" class="section level2">
+<h2>Marzahn-Hellersdorf</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_marzahn_hellersdorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_marzahn_hellersdorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="lichtenberg" class="section level2">
+<h2>Lichtenberg</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_lichtenberg-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_lichtenberg-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="pankow" class="section level2">
+<h2>Pankow</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_pankow-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_pankow-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="reinickendorf" class="section level2">
+<h2>Reinickendorf</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_reinikendorf-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_reinikendorf-1.png" width="672" /></p>
+<p><br></p>
+</div>
+<div id="spandau" class="section level2">
+<h2>Spandau</h2>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/highlight_spandau-1.png" width="240" /></p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_top_6_spandau-1.png" width="672" /></p>
+</div>
+
+                <br>
+                
+                  <div class="tags">
+                    <strong>Tags:</strong>
+                  
+                    <a href="/tags/berlin">Berlin</a>
+                  
+                    <a href="/tags/dataviz">Dataviz</a>
+                  
+                    <a href="/tags/germany">Germany</a>
+                  
+                    <a href="/tags/maps">Maps</a>
+                  
+                    <a href="/tags/r">R</a>
+                  
+                    <a href="/tags/yelp">Yelp</a>
+                  
+                  </div>
+                  <br />
+                
+                <p class="back-to-posts"><a href="/blog">Back to posts</a></p>
+            </div>
+            <br>
+            <div class="disqus">
+                <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "gershomtripp-com" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+    </div>
+</section>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-123-45', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/highlight.min.js"></script>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.11.0/languages/r.min.js"></script>
+  
+
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+
+
+
+
+
+</body>
+</html>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+

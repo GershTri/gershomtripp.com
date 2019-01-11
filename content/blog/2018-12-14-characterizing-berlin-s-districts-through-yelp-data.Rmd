@@ -253,7 +253,7 @@ yelp_df %>%
     select(review_count) %>% 
     ggplot(aes(x = review_count)) +
     geom_histogram(color = "black", fill = "#2471A3", bins = 16) + 
-    scale_x_log10(breaks = c(1, 10, seq(100, 1000, 300))) + 
+    scale_x_log10() + 
     scale_y_continuous(breaks = seq(0, 2500, 500)) +
     theme_minimal() + 
     theme(panel.grid.minor.x = element_blank()
@@ -358,11 +358,14 @@ yelp_df %>%
 
 ## Deciding on a Metric
 
-Ilia Blinderman and Amber Thomas [draw](https://pudding.cool/2018/03/neighborhoods/)
-on Katie Hempenius's reasoning in her 
+Ilia Blinderman and Amber Thomas [rely](https://pudding.cool/2018/03/neighborhoods/)
+on Katie Hempenius's "incidence rate" metric in her 
 [analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San
-Francisco's neighborhoods. With the dual goals of "identify[ing] interesting 
-trends" and "normaliz[ing] for the effects of commercial versus residential 
+Francisco's neighborhoods. I recommend reading Katie's post for a better understanding
+of how she arrived at her metric, but we might summarize her reasoning thusly: 
+Assuming the fraction of category~z~
+
+With the dual goals of "identify[ing] interesting trends" and "normaliz[ing] for the effects of commercial versus residential 
 usage" in mind, Katie arrives at the following formula for "incidence rate":
 
 $$

@@ -6,7 +6,7 @@
     <description>Recent content in Tags on Gershom Tripp</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Sat, 01 Dec 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 14 Dec 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,52 +14,43 @@
     <item>
       <title>Berlin</title>
       <link>/tags/berlin/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/berlin/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Climate</title>
-      <link>/tags/climate/</link>
-      <pubDate>Wed, 26 Sep 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/climate/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Dataviz</title>
       <link>/tags/dataviz/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/dataviz/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Eda</title>
-      <link>/tags/eda/</link>
-      <pubDate>Wed, 26 Sep 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/eda/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Germany</title>
       <link>/tags/germany/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/germany/</guid>
       <description></description>
     </item>
     
     <item>
+      <title>Maps</title>
+      <link>/tags/maps/</link>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/maps/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>R</title>
       <link>/tags/r/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/r/</guid>
       <description></description>
@@ -68,7 +59,7 @@
     <item>
       <title>Yelp</title>
       <link>/tags/yelp/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/yelp/</guid>
       <description></description>

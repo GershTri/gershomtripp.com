@@ -6,20 +6,19 @@
     <description>Recent content in Yelp on Gershom Tripp</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Sat, 01 Dec 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 14 Dec 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/yelp/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>A Tale of One More City</title>
-      <link>/blog/a-tale-of-one-more-city/</link>
-      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      <title>Characterizing Berlin&#39;s Districts Through Yelp Data</title>
+      <link>/blog/characterizing-berlin-s-districts-through-yelp-data/</link>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
-      <guid>/blog/a-tale-of-one-more-city/</guid>
-      <description>Intro here.
-Some Demographics  Characterizing Berlin Districts Through Yelp Reviews First, a glimpse of the data.
-## Observations: 17,976 ## Variables: 12 ## $ id &amp;lt;chr&amp;gt; &amp;quot;d0NEZdBlNt1EAZ3oRT2Osg&amp;quot;, &amp;quot;yMz08uk3Q7UjF... ## $ name &amp;lt;chr&amp;gt; &amp;quot;Endlich&amp;quot;, &amp;quot;Glienicker Brücke&amp;quot;, &amp;quot;Lutter ... ## $ review_count &amp;lt;int&amp;gt; 2, 21, 20, 4, 1, 1, 2, 39, 2, 8, 1, 4, 1... ## $ categories.title &amp;lt;chr&amp;gt; &amp;quot;Bistros&amp;quot;, &amp;quot;Landmarks &amp;amp; Historical Build... ## $ rating &amp;lt;dbl&amp;gt; 4.0, 4.5, 3.</description>
+      <guid>/blog/characterizing-berlin-s-districts-through-yelp-data/</guid>
+      <description>Introduction 
+ Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx.</description>
     </item>
     
   </channel>

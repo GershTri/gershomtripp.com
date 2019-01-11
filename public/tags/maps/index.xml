@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Maps on Gershom Tripp</title>
+    <link>/tags/maps/</link>
+    <description>Recent content in Maps on Gershom Tripp</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Fri, 14 Dec 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/maps/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Characterizing Berlin&#39;s Districts Through Yelp Data</title>
+      <link>/blog/characterizing-berlin-s-districts-through-yelp-data/</link>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/characterizing-berlin-s-districts-through-yelp-data/</guid>
+      <description>Introduction 
+ Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx.</description>
+    </item>
+    
+  </channel>
+</rss>
