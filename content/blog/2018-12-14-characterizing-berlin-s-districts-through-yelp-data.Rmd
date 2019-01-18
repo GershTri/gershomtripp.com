@@ -66,7 +66,33 @@ rm(cat_titles1, cat_titles2)
 
 ***
 
+What follows is an EDA of Yelp reviewed businesses in Berlin, Germany. 
 
+This blogpost represents a couple of firsts. For one, it is the product of of my
+very first foray into the world of geospatial data, including maps, decimal 
+degrees, dot density plots, choropleth maps (not included below, but coming soon),
+etc.
+
+It's also my first largish independent project. I've been coding for a while now, 
+and I've done countless EDA's, but I have not yet compiled my findings in a 
+document that is meant to be read by others - look at Mr. Optimistic, assuming 
+people are going to read this!
+
+And finally, it's my first blogpost ever. I've taken David Robinson's
+[advice](http://varianceexplained.org/r/start-blog/) and set up my own blog
+cum portfolio, and I intend to add to it regularly. Hopefully the internets will
+treat me kindly.
+
+I can't claim the idea for this post as my own. I've take quite a lot of inspiration
+from Amber Thomas' and Ilia Blinderman's [**A Tail of Two Cities**](https://pudding.cool/2018/03/neighborhoods/),
+where they did a similar (and much cooler) analysis of Seattle and NYC. They, in 
+turn, were inspired by Katie Hempenius'
+[analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San 
+Francisco's Yelp reviews. I highly recommend both analyses.
+
+
+
+Note that I frequently use the term _district_ in place of _neighborhood_. 
 
 
 
@@ -80,25 +106,26 @@ rm(cat_titles1, cat_titles2)
 
 ***
 
-The data were collected using the official Yelp [_Fusion_](https://www.yelp.de/developers/documentation/v3) API. Yelp's API isn't
-really made for bulk downloading data, so there were three limits to 
-contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 
-listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district
-names and PLZ (German ZIP codes) consistently failed because of 2., so I divided
-up Berlin's coordinates into a grid of approx. 500x500-meter blocks and sent
-requests for each block.
+The data were collected using the official Yelp 
+[_Fusion_](https://www.yelp.de/developers/documentation/v3) API. Yelp's API isn't
+really made for bulk downloading data, although this is allowed for non-commercial
+analyses such as the one you have before you, so there are a couple of request limits
+to contend with. There might be a more refined solution, but what worked for me was to
+divide Berlin into a grid of 500x500 meter blocks and then "scan" Berlin from 
+top to bottom and left to right.
 
-The above method worked well, except for one unforeseen problem: Longitudinal
-coordinates do not run parallel to one another, but converge at the
-poles and spread as they approach the equator, so the same longitudinal 
-coordinates do not represent the same distances at different latitudes. The
-upshot was that my grid-scan strategy broke down the more it went east and south.
-Some sort of correction would be ideal, but I decided for a "good enough" approach
-and simply shortened the longitudinal intervals and rescanned the affected parts.
+This method, although effective, did have one unforeseen pitfall: The data 
+developed very regular vertical striations (e.g. in a dot density map) in the 
+southern part of the grid, and particularly in the southeast. After a moment of
+frustration I hit on the idea that longitudinal lines don't run parallel, they
+converge at the poles and spread as they approach the equator, so the same
+longitudinal coordinates represent different distances at different latitudes.
+Consequently, the search radius should be increased incrementally as the scan 
+moves south.
 
-This strategy, being more ax than scalpel, generates a lot of duplicates. After 
+This strategy, being more ax than scalpel, generates **a lot** of duplicates. After 
 removing them I ended up with `r length(unique(yelp_df$id))` unique listings for 
-Berlin and Potsdam, which is a small city just outside of Berlin. 
+Berlin and Potsdam, the latter of which is a small city just outside of Berlin.
 
 
 
@@ -359,62 +386,111 @@ yelp_df %>%
 ## Deciding on a Metric
 
 Ilia Blinderman and Amber Thomas [rely](https://pudding.cool/2018/03/neighborhoods/)
-on Katie Hempenius's "incidence rate" metric in her 
+on Katie Hempenius's "incidence rate" metric from her 
 [analysis](https://katiehempenius.com/post/yelp-map-of-san-francisco/) of San
-Francisco's neighborhoods. I recommend reading Katie's post for a better understanding
-of how she arrived at her metric, but we might summarize her reasoning thusly: 
-Assuming the fraction of category~z~
-
-With the dual goals of "identify[ing] interesting trends" and "normaliz[ing] for the effects of commercial versus residential 
-usage" in mind, Katie arrives at the following formula for "incidence rate":
+Francisco's neighborhoods, so I will address Katie's arguments directly. I recommend reading Katie's post for a complete understanding of how she arrived at her metric, but we might summarize her reasoning thusly: 
 
 $$
-X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city} \times
-\frac{Businesses\;in\;city}{Businesses\;in\;zip}
+X = \frac{category_{Z}\;in\;district_{X}}{category_{Z}\;in\;city} \times
+\frac{businesses\;in\;city}{businesses\;in\;district_{X}}
 $$
 
-I have a number of problems with this metric, ranging from major to minor.
+I have a number of complaints regarding this metric, ranging from minor to major.
+I'll deal with two issues first that I regard as minor since they really have no
+bearing on Katie's, Ilia's, and Amber's conclusions. Still, I think they are worth
+briefly discussing, if only for the sake of clarity.
+
+My first complaint has to do with terminology. Simply put, the above formula does not represent the incidence rate. The _incidence rate_ has a [specific meaning](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html), particularly in epidemiology, but also in the business realm. It is namely a measure of _new cases_ in a specified period of _time_. Time is not, however, factored into the above formula. In reality, this formula is more of a riff on _prevalence_, which gives us the proportion of existing cases in the population as a whole. Here our population consists of all city-wide members of 
+category~Z~, and our cases are any members of category~Z~ found in district~X~. From here on out I'll refer to this prevalence as prevalence~CC~ (to be contrasted with prevalence~CB~, which I shall discuss shortly).
+
+I would like to add that using the incidence rate in this way is, although not really correct, also
+perfectly understanable. _Incidence_ is, after all, commonly used to indicate 
+the _occurence_ of something. In fact, most dictionary [definitions](https://www.dictionary.com/browse/incidence) 
+reflect just this usage, and incidence, occurence, and prevalence are frequently treated as [synonyms](https://www.thesaurus.com/browse/incidence). Nevertheless, the incidence rate has a more specific meaning than incidence alone, and since an _epidemiology of Yelp-reviewed businesses_ sounds like a perfectly reasonable approach, I think it's worth splitting a few hairs here.
+
+An even less pressing issue, but perhaps relevant in terms of computational resources,
+is the second half of the equation, which helps to "normalize for the effects of
+commercial versus residential usage", as Katie puts it. This step normalizes
+the prevalences~c/c~ by scaling them upwards by an amount equal to the number of times 
+larger the city-wide business population is than each district's respective business population.
+That means districts with fewer businesses receive a greater boost, so their prevalences~c/c~
+can be compared directly with those of districts with more businesses.
+
+The following exampl should hopefully make things clearer, while also offering a basis
+for my objection. The data is for two districts of a hypothetical city.
+Many of the column names should be more or less self-explanatory once you understand the 
+basic abbreviations: Districts = `dist`, businesses = `bus`, categories = `cat`, total = `tot`.
+
+The first table simply shows the category members and total businesses at the district
+and city level:
+
+```{r table_between-district_data}
+bd_df <- tibble(
+    dist = c("D_1", "D_1", "D_2", "D_2"),
+    cat = c("C_1", "C_2", "C_1", "C_2"),
+    cat_dist_tot = c(15, 10, 150, 100),
+    cat_city_tot = 1000,
+    "cat_dist/cat_city" = cat_dist_tot/cat_city_tot,
+    bus_dist_tot = c(100, 100, 1000, 1000),
+    bus_city_tot = 10000,
+    "bus_city/bus_dist" = bus_city_tot/bus_dist_tot,
+    "(c_d/c_c)*(b_c/b_d)" = `cat_dist/cat_city` * `bus_city/bus_dist`,
+    "cat_dist/bus_dist" = cat_dist_tot/bus_dist_tot
+)
+
+bd_df %>% 
+    select(1:4, 6, 7) %>% 
+    knitr::kable()
+```
+
+The second table includes the calculations we can make from the first table's data.
+Particularly important are the columns `cat_dist/cat_city`, which shows us the prevalence~CC~, 
+and `(c_d/c_c)*(b_c/b_d)`, which shows the _normalized_ prevalence~CC~:
+
+```{r table_between-district_calculations}
+bd_df %>% 
+    select(1, 2, 5, 8:10) %>% 
+    knitr::kable()
+```
 
 
-Some will probably think that my first complaint is just hairsplitting, but think
-it should be useful, nonetheless. Simply put, the above formula does not describe
-the _incidence rate_. The [incidence rate](https://www.cdc.gov/ophss/csels/dsepd/ss1978/lesson3/section2.html) is a
-measure of _new cases_ in a specified period of _time_. Time, however, doesn't
-play a role in the above formula - nor should it, as we are really just interested
-in a cross-section of Yelp-reviewed Berlin businesses at this point.
+We should notice a couple of things here. First, normalizing the prevalences~c/c~ allows
+us to compare the between-district, within-category rankings, e.g. we can see that
+C~1~ is equally prevalent in D~1~ and D~2~ once we control for differences in the 
+total number of businesses in each district. On the other hand, the within-district, 
+between-category rankings remain unaffected.
 
-This doesn't at all invalidate Katie's, Ilia's, and Amber's work. "Incidence" is
-commonly used to indicate the _occurence_ of something. In fact,
-most dictionary [definitions](https://www.dictionary.com/browse/incidence) 
-reflect just this usage. Nevertheless, the _incidence rate_ has a more specific 
-meaning than _incidence_ alone, and this is particularly relevant in the present
-context, where an epidemiological approach is appropriate.
-
-A less pressing issue, but perhaps relevant in terms of computational resources,
-is the second half of the equation: It is a neighborhood-level constant, and has,
-as such, no impact on the neighborhood-level rankings, which is what we are
-interested in. A simplified formula will produce the same results:
+And therein lies the crux of the problem: Katie, Ilia, and Amber appear to have only used the within-district, between-category
+rankings to characterize their cities' districts, which means normalizing the data 
+in this way was unnecessary. Ergo, a simplified version of Katie's formula would work just as well:
 
 $$
-X = \frac{Category\;Z\;in\;zip}{Category\;Z\;in\;city}
+X = \frac{category_{Z}\;in\;district_{X}}{category_{Z}\;in\;city}
 $$
 
-What remains is something that could probably be more accurately described as a
-riff on the _prevalence rate_, where our "cases" are the number of businesses from
-a category found in a given district, and our population consists of all category
-members. Although useful, there are a number of problems with this metric when
-it is used alone:
+To be clear, I don't mean to imply that between-district rankings are unimportant.
+On the contrary, I've implemented it as part of my own proposed method below.
+It is also fully possible that I've missed something. Katie's code doesn't seem
+to be available, and Ilia and Amber's data has already been thoroughly processed, 
+so it's impossible to replicate some necessary steps without downloading all the
+Yelp data they used, which is more work than I'm prepared to do right now. If you 
+happen to find some mistakes in my reasoning, please feel free to point them out
+in the comments.
 
-1. _It ignores differences in business frequency_. If 10 of 20 city-wide members of 
-   category c~1~ are found in a neighborhood, and 100 of 200 city-wide member of
-   category c~2~ are found in the same neighborhood, then the formula tells us 
-   that the neighborhood is equally characterized by c~1~ and c~2~ (10/20 = 0.5
-   and 100/200 = 0.5). Even worse, if c~2~ has 210 instead of 200 city-wide 
-   members, then the formula tells us that c~1~ characterizes the neighborhood 
-   _better_ than c~2~, even though c~2~ occurs 10 times more than c~1~ in the district!
-2. _It is biased in favor of small sample sizes_. Different types of businesses 
-   likely aren't evenly distributed across a city. In particular, a small number
-   of niche businesses might more likely be clustered in one area. For example,
+
+With the minor issues cleared up, we can now turn to the what I see as the major
+drawbacks of the prevalence~CC~. 
+
+1. **It ignores differences in total business frequency**. If 10 of 20 city-wide members of 
+   category C~1~ are found in a district, and 100 of 200 city-wide members of
+   category C~2~ are found in the same district, then prevalence~CC~ tells us 
+   that the neighborhood is equally characterized by C~1~ and C~2~ (10/20 = 0.5
+   and 100/200 = 0.5). Even worse, if C~2~ has 210 instead of 200 city-wide 
+   members, then the formula tells us that C~1~ characterizes the neighborhood 
+   _better_ than C~2~, even though C~2~ occurs 10 times more than C~1~ in the district!
+2. **It is biased in favor of small sample sizes**. Different types of businesses
+   likely aren't distributed evenly across a city. Especially small populations
+   of niche businesses might be more likely be clustered in one area. For example,
    vegan restaurants might be fairly rare in the city as a whole, but in one
    particulary trendy neighborhood
    you might find a cluster of them. As is the nature of things, "trendy" 
@@ -426,28 +502,31 @@ it is used alone:
    more prominent in everyday life. Of course, it's still important to know that
    there are more vegan restaurants in one neighborhood than anywhere else, but 
    neighborhood's uniqueness should not be determined primarily by the general 
-   scarcity of some of its businesses.
-3. _It doesn't take into account variations in the total number of businesses_.
+   scarcity of some of its businesses. (Note: This principle holds true for any
+   businesses. My example h)
+3. **It doesn't take into account variations in the total number of businesses**.
    Two neighborhoods might both be home to 20 of 100 total category members, i.e.
    each has 20% of the whole, but neighborhood _x_ has a total of 2,000 businesses,
    while neighborhood _y_ only has 200. Should we say that the category characterizes
    both neighborhoods equally? Probably not.
-4. _It ignores other indicators of interest_. It wouldn't be farfetched to view
+4. **It ignores other indicators of interest**. It would be reasonable to view
    the number of listings for a given category in a district as one indication 
-   of interest. For example, if we assume that two districts d~1~ and d~2~ have,
-   in reality, the same number of businesses from category c~x~, but there are more
-   Yelp listings for that category in one d~1~ than d~2~, then we could
-   hypothesize that people are more interested in c~x~ in d~1~ than in d~2~. It 
-   would then be reasonable to conclude that c~x~ characterizes d~1~ _more_ than
-   it does d~2~. But what if the c~x~ listings in d~2~ have more reviews on average?
+   of interest. For example, if we assume that two districts D~1~ and D~2~ have,
+   in reality, the same number of instances of C~x~, but there are more
+   Yelp listings for that category in D~1~ than in D~2~, then we could
+   hypothesize C~x~ generates more interest in D~1~ than in D~2~, and that it thus
+   characterizes D~1~ better than D~2~. But what if the C~x~ listings in D~2~ 
+   have more reviews on average? 
+   
    
    
 
+With the above 
 
 $$
 score = 
-prevalence \times
-proportion \times
+prevalence_{CB} \times
+prevalence_{CC} \times
 interest
 $$
 Each part of this formula brings its own advantages and disadvantages. For 

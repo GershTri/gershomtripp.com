@@ -61,5 +61,12 @@ section.main .content .markdown ol {
 }
 th {
   font-weight: bolder;
-  font-size: 1.2em;
+  font-size: .9em;
+}
+tr {
+  font-size: .9em;
+}
+sub{
+  vertical-align: sub;
+  font-size: .6em;
 }
