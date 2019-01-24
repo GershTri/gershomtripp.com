@@ -66,7 +66,7 @@ rm(cat_titles1, cat_titles2)
 
 ***
 
-What follows is an EDA of Yelp reviewed businesses in Berlin, Germany. 
+What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. 
 
 This blogpost represents a couple of firsts. For one, it is the product of of my
 very first foray into the world of geospatial data, including maps, decimal 
@@ -139,11 +139,12 @@ Berlin and Potsdam, the latter of which is a small city just outside of Berlin.
 
 <br><br>
 
-## A Brief Analysis of Yelp-Reviewed Businesses in Berlin
+## A Brief EDA of Yelp-Reviewed Businesses in Berlin
 
 ***
 
-Before I get to the districts, I 
+The following section consitutes an exploratory analysis of Berlin's Yelp reviews
+and is meant to give us a feel for the data.
 
 First, a glimpse of the data.
 
@@ -197,6 +198,27 @@ berlin_map %>%
 ```
 
 
+```{r plot_businesses_per_district, message=FALSE, warning=FALSE}
+yelp_df <- yelp_df %>% 
+    filter(district != "Potsdam")
+
+yelp_df %>%
+    group_by(district) %>%
+    count() %>% 
+    ungroup() %>% 
+    arrange(n) %>% 
+    mutate(district = factor(district, ordered = T, levels = .$district)) %>% 
+    ggplot(aes(x = district, y = n)) +
+    geom_bar(stat = "identity", fill = "#7B241C" ) + 
+    coord_flip() + 
+    theme_minimal() + 
+    theme(panel.grid.major.y = element_blank()) + 
+    scale_y_continuous(breaks = seq(0, 3500, by = 500), limits = c(0, 3500)) + 
+    labs(y = "number of businesses",
+         x = "district",
+         title = "Total business count per district"
+         )
+```
 
 ```{r plot_30_categories_with_most_listings}
 #
