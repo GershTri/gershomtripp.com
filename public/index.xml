@@ -17,9 +17,8 @@
       <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
       
       <guid>/blog/characterizing-berlin-s-districts-through-yelp-data/</guid>
-      <description>Introduction Note that I frequently use the term district in place of neighborhood.
-
- Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2.</description>
+      <description>Introduction What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. It can broadly be broken up into two parts: The first part constitutes a general EDA where I explore the contours of the data and produce some basic statistics. The second part represents an attempt to describe each of Berlin’s 12 districts through “characteristic” businesses.
+This blogpost represents a couple of firsts. For one, it is the product of of my very first foray into the world of geospatial data, including maps, decimal degrees, dot density plots, choropleth maps (not included below, but coming soon), etc.</description>
     </item>
     
     <item>

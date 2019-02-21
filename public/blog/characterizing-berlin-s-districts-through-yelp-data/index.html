@@ -9,14 +9,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
 <meta name="author" content="Gershom Tripp">
-<meta name="description" content="Introduction Note that I frequently use the term district in place of neighborhood.
-
- Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2.">
+<meta name="description" content="Introduction What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. It can broadly be broken up into two parts: The first part constitutes a general EDA where I explore the contours of the data and produce some basic statistics. The second part represents an attempt to describe each of Berlin’s 12 districts through “characteristic” businesses.
+This blogpost represents a couple of firsts. For one, it is the product of of my very first foray into the world of geospatial data, including maps, decimal degrees, dot density plots, choropleth maps (not included below, but coming soon), etc.">
 
 <meta property="og:title" content="Characterizing Berlin&#39;s Districts Through Yelp Data" />
-<meta property="og:description" content="Introduction Note that I frequently use the term district in place of neighborhood.
-
- Getting the Data The data were collected using the official Yelp Fusion API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2." />
+<meta property="og:description" content="Introduction What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. It can broadly be broken up into two parts: The first part constitutes a general EDA where I explore the contours of the data and produce some basic statistics. The second part represents an attempt to describe each of Berlin’s 12 districts through “characteristic” businesses.
+This blogpost represents a couple of firsts. For one, it is the product of of my very first foray into the world of geospatial data, including maps, decimal degrees, dot density plots, choropleth maps (not included below, but coming soon), etc." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="/blog/characterizing-berlin-s-districts-through-yelp-data/" /><meta property="article:published_time" content="2018-12-14T00:00:00&#43;00:00"/>
 <meta property="article:modified_time" content="2018-12-14T00:00:00&#43;00:00"/>
@@ -45,11 +43,11 @@
 
 
     
-    <link rel="stylesheet" href="/css/reset.css?t=2019-01-12%2007%3a44%3a25.70476%20%2b0100%20CET%20m%3d%2b0.206684311">
-    <link rel="stylesheet" href="/css/pygments.css?t=2019-01-12%2007%3a44%3a25.70476%20%2b0100%20CET%20m%3d%2b0.206684311">
-    <link rel="stylesheet" href="/css/main.css?t=2019-01-12%2007%3a44%3a25.70476%20%2b0100%20CET%20m%3d%2b0.206684311">
+    <link rel="stylesheet" href="/css/reset.css?t=2019-02-08%2008%3a59%3a19.422865%20%2b0100%20CET%20m%3d%2b0.124170637">
+    <link rel="stylesheet" href="/css/pygments.css?t=2019-02-08%2008%3a59%3a19.422865%20%2b0100%20CET%20m%3d%2b0.124170637">
+    <link rel="stylesheet" href="/css/main.css?t=2019-02-08%2008%3a59%3a19.422865%20%2b0100%20CET%20m%3d%2b0.124170637">
     
-        <link rel="stylesheet" href="/css/override.css?t=2019-01-12%2007%3a44%3a25.70476%20%2b0100%20CET%20m%3d%2b0.206684311">
+        <link rel="stylesheet" href="/css/override.css?t=2019-02-08%2008%3a59%3a19.422865%20%2b0100%20CET%20m%3d%2b0.124170637">
     
 
 
@@ -177,29 +175,33 @@
                     <div class="date" title='Fri Dec 14 2018 00:00:00 UTC'>Dec 14, 2018</div>
                     
                     
-		    <div class="reading-time"><div class="middot"></div>11 minutes read</div>
+		    <div class="reading-time"><div class="middot"></div>12 minutes read</div>
                     
                 </div>
             </div>
             <div class="markdown">
                 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<hr />
+<p>What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. It can broadly be broken up into two parts: The first part constitutes a general EDA where I explore the contours of the data and produce some basic statistics. The second part represents an attempt to describe each of Berlin’s 12 districts through “characteristic” businesses.</p>
+<p>This blogpost represents a couple of firsts. For one, it is the product of of my very first foray into the world of geospatial data, including maps, decimal degrees, dot density plots, choropleth maps (not included below, but coming soon), etc.</p>
+<p>It’s also my first largish independent project. I’ve been coding for a while now, and I’ve done countless EDA’s, but I have not yet compiled my findings in a document that is meant to be read by others - look at Mr. Optimistic, assuming people are going to read this!</p>
+<p>And finally, it’s my first blogpost ever. I’ve taken David Robinson’s <a href="http://varianceexplained.org/r/start-blog/">advice</a> and set up my own blog cum portfolio, and I intend to add to it regularly. Hopefully the internets will treat me kindly.</p>
+<p>I can’t claim the idea for this post as my own. I’ve take quite a lot of inspiration from Amber Thomas’ and Ilia Blinderman’s <a href="https://pudding.cool/2018/03/neighborhoods/"><strong>A Tail of Two Cities</strong></a>, where they did a similar (and much cooler) analysis of Seattle and NYC. They, in turn, were inspired by Katie Hempenius’ <a href="https://katiehempenius.com/post/yelp-map-of-san-francisco/">analysis</a> of San Francisco’s Yelp reviews. I highly recommend both analyses.</p>
 <p>Note that I frequently use the term <em>district</em> in place of <em>neighborhood</em>.</p>
 <p><br><br></p>
 </div>
 <div id="getting-the-data" class="section level2">
 <h2>Getting the Data</h2>
 <hr />
-<p>The data were collected using the official Yelp <a href="https://www.yelp.de/developers/documentation/v3"><em>Fusion</em></a> API. Yelp’s API isn’t really made for bulk downloading data, so there were three limits to contend with: 1. max 50 listings per request, 2. max 1000 listings per query (50 listing-chunks x 20 offsets), and 3. max 5000 requests per day. Using district names and PLZ (German ZIP codes) consistently failed because of 2., so I divided up Berlin’s coordinates into a grid of approx. 500x500-meter blocks and sent requests for each block.</p>
-<p>The above method worked well, except for one unforeseen problem: Longitudinal coordinates do not run parallel to one another, but converge at the poles and spread as they approach the equator, so the same longitudinal coordinates do not represent the same distances at different latitudes. The upshot was that my grid-scan strategy broke down the more it went east and south. Some sort of correction would be ideal, but I decided for a “good enough” approach and simply shortened the longitudinal intervals and rescanned the affected parts.</p>
-<p>This strategy, being more ax than scalpel, generates a lot of duplicates. After removing them I ended up with 11989 unique listings for Berlin and Potsdam, which is a small city just outside of Berlin.</p>
+<p>The data were collected using the official Yelp <a href="https://www.yelp.de/developers/documentation/v3"><em>Fusion</em></a> API. Yelp’s API isn’t really made for bulk downloading data, although this is allowed for non-commercial analyses such as the one you have before you, so there are a couple of request limits to contend with. There might be a more refined solution, but what worked for me was to divide Berlin into a grid of 500x500 meter blocks and then “scan” Berlin from top to bottom and left to right.</p>
+<p>This method, although effective, did have one unforeseen pitfall: The data developed very regular vertical striations (e.g. in a dot density map) in the southern part of the grid, and particularly in the southeast. After a moment of frustration I hit on the idea that longitudinal lines don’t run parallel, they converge at the poles and spread as they approach the equator, so the same longitudinal coordinates represent different distances at different latitudes. Consequently, the search radius should be increased incrementally as the scan moves south.</p>
+<p>This strategy, being more ax than scalpel, generates <strong>a lot</strong> of duplicates. After removing them I ended up with 11989 unique listings for Berlin and Potsdam, the latter of which is a small city just outside of Berlin.</p>
 <p><br><br></p>
 </div>
-<div id="a-brief-analysis-of-yelp-reviewed-businesses-in-berlin" class="section level2">
-<h2>A Brief Analysis of Yelp-Reviewed Businesses in Berlin</h2>
+<div id="a-brief-eda-of-yelp-reviewed-businesses-in-berlin" class="section level2">
+<h2>A Brief EDA of Yelp-Reviewed Businesses in Berlin</h2>
 <hr />
-<p>Before I get to the districts, I</p>
+<p>This first section consitutes an exploratory analysis of Berlin’s Yelp reviews, and is meant to give us a feel for the data.</p>
 <p>First, a glimpse of the data.</p>
 <pre><code>## Observations: 17,976
 ## Variables: 12
@@ -215,29 +217,33 @@
 ## $ location.state        &lt;chr&gt; &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;, &quot;BE&quot;...
 ## $ price                 &lt;chr&gt; NA, NA, &quot;€€€&quot;, NA, NA, NA, NA, &quot;€€&quot;, NA,...
 ## $ district              &lt;chr&gt; &quot;Tempelhof-Schöneberg&quot;, &quot;Steglitz-Zehlen...</code></pre>
-<p>As I mentioned above, the number of unique listings for Berlin and Potsdam is just under 12,000. The 17,976 you see here is due the fact that some listings belong to multiple categories. I haven’t been able to discern any kind of consistent hierarchy (i.e. supercategories and subcategories), so every A dot density plot can give some perspective on the distribution of Yelp-reviewed businesses. The colors correspond to Berlin’s 12 administrative districts and Potsdam, a town to the southwest of Berlin. The names of the districts aren’t important at this point. Interesting is the disparity in the spatial density of Yelp-reviewed businesses between districts.</p>
+<p>As I mentioned above, the number of unique listings for Berlin and Potsdam is just under 12,000. The 17,976 you see here is due the fact that some listings belong to multiple categories. I haven’t been able to discern any kind of consistent hierarchy (i.e. supercategories and subcategories), so every</p>
+<p>A dot density plot can give some perspective on the overall distribution of Yelp-reviewed businesses at the district and city level. The colors correspond to Berlin’s 12 administrative districts and Potsdam, a town to the southwest of Berlin. Knowing exactly which color corresponds to which district isn’t important at this point. It’s enough to realize that most business are concentrated in and around the city center, and that some districts obviously have more, and more geographically concentrated businesses.</p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_dot_density_all_businesses-1.png" width="672" /></p>
+<p>While the dot density plot looks cool and gives us some insight into the distribution of all businesses in Berlin, it’s not very efficient at showing the differences between districts. For that I’ll resort to the humble bar plot.</p>
+<p>The following plot shows the absolute business count for each Berlin district. The districts with the highest number of businesses - Mitte, Panow, Friedrichshain-Kreuzberg, etc. - correspond to the densest clusters we saw in the previous dot density chart, and those with the lowest number correspond to the outer, more residential districts</p>
+<p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_businesses_per_district-1.png" width="672" /></p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_categories_with_most_listings-1.png" width="672" /></p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_categories_with_most_reviews_per_listing-1.png" width="672" /></p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_30_businesses_with_most_reviews-1.png" width="672" /></p>
 <p>A histogram can show us the distribution of reviews, specifically the number of reviews per listing. Here we can see that the bulk of the listings have less than 100 reviews, so the businesses in the</p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/plot_histogram_review_count_per_listing-1.png" width="672" /></p>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-1.png" width="672" /><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-2.png" width="672" /></p>
-<pre><code>## # A tibble: 21 x 4
-## # Groups:   categories.title [21]
+<pre><code>## # A tibble: 22 x 4
+## # Groups:   categories.title [22]
 ##    categories.title Listings review_mean bin  
 ##    &lt;chr&gt;               &lt;int&gt;       &lt;dbl&gt; &lt;fct&gt;
-##  1 Shopping Centers        2         106 5    
-##  2 Aquariums               3         102 5    
-##  3 Sri Lankan              1          99 5    
-##  4 Jewish                  2          80 5    
-##  5 Tabletop Games          1          77 5    
-##  6 Taiwanese               4          66 5    
-##  7 Ukrainian               3          61 5    
-##  8 Baden                   3          60 5    
-##  9 Pensions                1          57 5    
-## 10 Cajun/Creole            2          54 5    
-## # ... with 11 more rows</code></pre>
+##  1 Aquariums               2        126. 5    
+##  2 Shopping Centers        2        106  5    
+##  3 Sri Lankan              1         99  5    
+##  4 Jewish                  2         80  5    
+##  5 Tabletop Games          1         77  5    
+##  6 Taiwanese               4         66  5    
+##  7 Ukrainian               3         61  5    
+##  8 Baden                   3         60  5    
+##  9 Cajun/Creole            2         54  5    
+## 10 Fondue                  3         54  5    
+## # ... with 12 more rows</code></pre>
 <p><img src="/blog/2018-12-14-characterizing-berlin-s-districts-through-yelp-data_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
 <p><br><br></p>
 <div id="berliners-love-value." class="section level4">

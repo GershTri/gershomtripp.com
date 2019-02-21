@@ -18,8 +18,11 @@ knitr::opts_chunk$set(echo=FALSE)
 ```
 
 ```{r load_packages, include=FALSE}
+# load packages, set ggplot theme
 library(tidyverse)
 library(ggmap)
+library(viridis)
+theme_set(theme_minimal())
 ```
 
 ```{r load_data, include=FALSE}
@@ -64,9 +67,11 @@ rm(cat_titles1, cat_titles2)
 
 ## Introduction
 
-***
-
-What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. 
+What follows is an analysis of Yelp reviewed businesses in Berlin, Germany. It
+can broadly be broken up into two parts: The first part constitutes a general
+EDA where I explore the contours of the data and produce some basic statistics. 
+The second part represents an attempt to describe each of Berlin's 12 
+districts through "characteristic" businesses.
 
 This blogpost represents a couple of firsts. For one, it is the product of of my
 very first foray into the world of geospatial data, including maps, decimal 
@@ -143,8 +148,8 @@ Berlin and Potsdam, the latter of which is a small city just outside of Berlin.
 
 ***
 
-The following section consitutes an exploratory analysis of Berlin's Yelp reviews
-and is meant to give us a feel for the data.
+This first section consitutes an exploratory analysis of Berlin's Yelp reviews,
+and is meant to give us a feel for the data. 
 
 First, a glimpse of the data.
 
@@ -160,16 +165,18 @@ As I mentioned above, the number of unique listings for Berlin and Potsdam is
 just under 12,000. The 17,976 you see here is due the fact that some listings 
 belong to multiple categories. I haven't been able to discern any kind of 
 consistent hierarchy (i.e. supercategories and subcategories), so every 
-A dot density plot can give some perspective on the distribution of Yelp-reviewed
-businesses. The colors correspond to Berlin's 12 administrative districts and 
-Potsdam, a town to the southwest of Berlin. The names of the districts aren't 
-important at this point. Interesting is the disparity in the spatial density of
-Yelp-reviewed businesses between districts.
+
+A dot density plot can give some perspective on the overall distribution of Yelp-reviewed
+businesses at the district and city level. The colors correspond to Berlin's 12 
+administrative districts and Potsdam, a town to the southwest of Berlin. Knowing
+exactly which color corresponds to which district isn't important at this point.
+It's enough to realize that most business are concentrated in and around the 
+city center, and that some districts obviously have more, and more geographically 
+concentrated businesses.
 
 ```{r plot_dot_density_all_businesses, message=FALSE, warning=FALSE}
 berlin_coord <- c(left = 12.9680, bottom = 52.3219, right = 13.8000, top = 52.6918)
 berlin_map <- get_stamenmap(berlin_coord, maptype = "toner-background")
-
 yelp_df[is.na(yelp_df$district), "district"] <- "Potsdam"
 
 berlin_map %>% 
@@ -198,6 +205,17 @@ berlin_map %>%
 ```
 
 
+While the dot density plot looks cool and gives us some insight into the distribution
+of all businesses in Berlin, it's not very efficient at showing the differences
+between districts. For that I'll resort to the humble bar plot.
+
+The following plot shows the absolute business count for each Berlin district. 
+The districts with the highest number of businesses - Mitte, Panow, Friedrichshain-Kreuzberg, 
+etc. - correspond to the densest clusters we saw in the previous dot density
+chart, and those with the lowest number correspond to the outer, more residential 
+districts
+
+
 ```{r plot_businesses_per_district, message=FALSE, warning=FALSE}
 yelp_df <- yelp_df %>% 
     filter(district != "Potsdam")
@@ -211,7 +229,6 @@ yelp_df %>%
     ggplot(aes(x = district, y = n)) +
     geom_bar(stat = "identity", fill = "#7B241C" ) + 
     coord_flip() + 
-    theme_minimal() + 
     theme(panel.grid.major.y = element_blank()) + 
     scale_y_continuous(breaks = seq(0, 3500, by = 500), limits = c(0, 3500)) + 
     labs(y = "number of businesses",
@@ -237,7 +254,6 @@ yelp_df %>%
     ggplot(aes(y = Category, x = Count)) +
     geom_point(shape = 21, fill = "lightblue", size = 2) + 
     scale_x_continuous(breaks = seq(100, 1700, 200)) +
-    theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank()
@@ -261,7 +277,6 @@ yelp_df %>%
            ) %>% 
     ggplot(aes(y = Category, x = mean_review)) +
     geom_point(shape = 21, fill = "#F1C40F", size = 2) + 
-    theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank()
@@ -282,7 +297,6 @@ yelp_df %>%
     ggplot(aes(y = name, x = review_count)) +
     geom_point(shape = 21, fill = "salmon", size = 2) + 
     scale_x_continuous(breaks = seq(250, 1000, 150)) +
-    theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank()
@@ -304,7 +318,6 @@ yelp_df %>%
     geom_histogram(color = "black", fill = "#2471A3", bins = 16) + 
     scale_x_log10() + 
     scale_y_continuous(breaks = seq(0, 2500, 500)) +
-    theme_minimal() + 
     theme(panel.grid.minor.x = element_blank()
           ) + 
     ggtitle("Histogram of Review Count per Yelp Listing") + 
@@ -351,7 +364,6 @@ yelp_df %>%
     ggplot(aes(x = rating)) +
     geom_histogram(binwidth = .5, color = "black", fill = "#2471A3") +
     scale_x_continuous(breaks = seq(0, 5, .5)) +
-    theme_minimal() + 
     theme(panel.grid.minor.x = element_blank(),
           panel.grid.major.x = element_blank()
           ) + 
@@ -394,7 +406,6 @@ yelp_df %>%
            ) %>% 
     ggplot(aes(x = price, y = n, fill = price)) +
     geom_bar(stat = "identity", color = "black") + 
-    theme_minimal() + 
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           legend.position = "none"
@@ -747,7 +758,6 @@ bind_rows(list(prop_cat_df, preval_dist_df, preval_diff_df, review_prop_df,
     geom_hline(yintercept = 0) +
     coord_flip() +
     facet_wrap(~Method) +
-    theme_minimal() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
           axis.title.y = element_blank(),
@@ -797,7 +807,6 @@ plot_district <- function(district_name, coords) {
                        ),
                    ) +
         facet_wrap(~ categories.title, ncol = 2) +
-        theme_minimal() +
         theme(axis.title = element_blank(),
               axis.text = element_blank(),
               axis.ticks = element_blank(),
