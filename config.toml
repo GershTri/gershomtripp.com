@@ -52,7 +52,7 @@ disqusShortname = "yourdiscussshortname"
     enableTwemoji = true
 
     # Custom CSS
-    customCSS = []
+    customCSS = ["css/override.css"]
 
     # Custom SCSS
     customSCSS = []
