@@ -9,7 +9,7 @@ aliases = [
 
 +++
 
-This website is my personal hompage and blogfolio. I put mostly data-science-related content here, because that's my passion, but sometimes I also write about other things.
+This blah website is my personal hompage and blogfolio. I put mostly data-science-related content here, because that's my passion, but sometimes I also write about other things.
 
 Because this is a blog cum portfolio you will often find prose interspersed with code. This is known as [literate programming](https://en.wikipedia.org/wiki/Literate_programming), and I hope it encourages readers/data scientists to learn from, teach, and otherwise interact with me.
 
