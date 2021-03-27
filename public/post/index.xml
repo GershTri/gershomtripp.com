@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on gershomtripp</title>
+    <link>https://gershomtripp.com/post/</link>
+    <description>Recent content in Posts on gershomtripp</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 05 Jan 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://gershomtripp.com/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Test post</title>
+      <link>https://gershomtripp.com/post/2021-01-05-test-post/</link>
+      <pubDate>Tue, 05 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://gershomtripp.com/post/2021-01-05-test-post/</guid>
+      <description>blah</description>
+    </item>
+    
+  </channel>
+</rss>
